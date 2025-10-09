@@ -1,0 +1,155 @@
+package ui
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"time"
+
+	"github.com/schollz/progressbar/v3"
+)
+
+// ProgressBar wraps the progressbar library with FR-029 requirements
+// Provides progress visualization with percentage, ETA, throughput
+type ProgressBar struct {
+	bar         *progressbar.ProgressBar
+	description string
+	total       int64
+	current     int64
+	startTime   time.Time
+}
+
+// NewProgressBar creates a progress bar for operations with known total size
+// FR-029a: Progress bars for known-size operations
+// FR-029d: Updates every 2 seconds minimum
+func NewProgressBar(total int64, description string) *ProgressBar {
+	bar := progressbar.NewOptions64(
+		total,
+		progressbar.OptionSetDescription(description),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionThrottle(500*time.Millisecond), // Update every 500ms
+		progressbar.OptionShowIts(),                      // Show items per second (throughput)
+		progressbar.OptionSetWriter(os.Stderr),           // Write to stderr (unbuffered)
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionEnableColorCodes(false), // Disable colors for better compatibility
+	)
+
+	return &ProgressBar{
+		bar:         bar,
+		description: description,
+		total:       total,
+		current:     0,
+		startTime:   time.Now(),
+	}
+}
+
+// NewProgressBarWithWriter creates a progress bar that writes to a specific writer
+// Useful for testing with mock writers
+func NewProgressBarWithWriter(total int64, description string, writer io.Writer) *ProgressBar {
+	bar := progressbar.NewOptions64(
+		total,
+		progressbar.OptionSetDescription(description),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSetWidth(40),
+		progressbar.OptionThrottle(500*time.Millisecond),
+		progressbar.OptionShowIts(),
+		progressbar.OptionSetWriter(writer),
+		progressbar.OptionEnableColorCodes(false),
+	)
+
+	return &ProgressBar{
+		bar:         bar,
+		description: description,
+		total:       total,
+		current:     0,
+		startTime:   time.Now(),
+	}
+}
+
+// Add increments the progress bar by the given amount
+// FR-029e: Updates throughput automatically
+func (p *ProgressBar) Add(amount int64) error {
+	p.current += amount
+	return p.bar.Add64(amount)
+}
+
+// Set sets the progress bar to a specific value
+func (p *ProgressBar) Set(value int64) error {
+	p.current = value
+	return p.bar.Set64(value)
+}
+
+// Finish completes the progress bar
+func (p *ProgressBar) Finish() error {
+	return p.bar.Finish()
+}
+
+// Clear clears the progress bar from the terminal
+func (p *ProgressBar) Clear() error {
+	return p.bar.Clear()
+}
+
+// GetPercentage returns current completion percentage
+// FR-029e: Percentage display
+func (p *ProgressBar) GetPercentage() float64 {
+	if p.total == 0 {
+		return 0
+	}
+	return (float64(p.current) / float64(p.total)) * 100
+}
+
+// GetElapsedTime returns time elapsed since progress bar was created
+// FR-029e: Elapsed time display
+func (p *ProgressBar) GetElapsedTime() time.Duration {
+	return time.Since(p.startTime)
+}
+
+// Spinner provides visual feedback for operations with unknown duration
+// FR-029c: Spinners for unknown duration operations
+type Spinner struct {
+	description string
+	startTime   time.Time
+	active      bool
+}
+
+// NewSpinner creates a spinner for unknown-duration operations
+func NewSpinner(description string) *Spinner {
+	return &Spinner{
+		description: description,
+		startTime:   time.Now(),
+		active:      false,
+	}
+}
+
+// Start begins the spinner animation
+func (s *Spinner) Start() {
+	s.active = true
+	s.startTime = time.Now()
+	fmt.Printf("%s...\n", s.description)
+}
+
+// Stop ends the spinner animation
+func (s *Spinner) Stop(success bool) {
+	s.active = false
+	elapsed := time.Since(s.startTime)
+
+	if success {
+		fmt.Printf("✓ %s (completed in %v)\n", s.description, elapsed.Round(time.Millisecond))
+	} else {
+		fmt.Printf("✗ %s (failed after %v)\n", s.description, elapsed.Round(time.Millisecond))
+	}
+}
+
+// UpdateMessage updates the spinner's description while it's running
+func (s *Spinner) UpdateMessage(message string) {
+	s.description = message
+	if s.active {
+		fmt.Printf("\r%s... (%v elapsed)", message, time.Since(s.startTime).Round(time.Second))
+	}
+}
+
+// IsActive returns whether the spinner is currently running
+func (s *Spinner) IsActive() bool {
+	return s.active
+}

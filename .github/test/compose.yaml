@@ -1,0 +1,7 @@
+name: aether-test
+
+networks:
+  dimp:
+
+include:
+  - dimp/compose.yaml

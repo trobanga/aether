@@ -1,0 +1,40 @@
+# Aether DUP Pipeline Configuration Example
+# Copy this file to aether.yaml and customize for your environment
+
+services:
+  # DIMP Pseudonymization Service (optional)
+  # Leave empty to skip pseudonymization step
+  dimp_url: "http://localhost:32861/fhir"
+
+  # CSV Conversion Service (optional)
+  # Leave empty to skip CSV conversion
+  csv_conversion_url: "http://localhost:9000/convert/csv"
+
+  # Parquet Conversion Service (optional)
+  # Leave empty to skip Parquet conversion
+  parquet_conversion_url: "http://localhost:9000/convert/parquet"
+
+pipeline:
+  # List of steps to execute in order
+  # Options: import, dimp, validation, csv_conversion, parquet_conversion
+  # NOTE: 'import' must always be the first step
+  enabled_steps:
+    - import
+    - dimp
+    - csv_conversion
+    - parquet_conversion
+
+retry:
+  # Maximum number of retry attempts for transient errors (network, 5xx)
+  # Range: 1-10
+  max_attempts: 5
+
+  # Initial backoff delay in milliseconds
+  initial_backoff_ms: 1000
+
+  # Maximum backoff delay in milliseconds (exponential backoff cap)
+  max_backoff_ms: 30000
+
+# Directory to store job state and data
+# Can be absolute or relative path
+jobs_dir: "./jobs"

@@ -1,0 +1,48 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# Build output
+bin/
+dist/
+aether
+aether-*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Job runtime data (never commit job state)
+jobs/
+
+# Local configuration (use aether.example.yaml as template)
+aether.yaml
+config/aether.yaml
+
+# Test coverage
+coverage.txt
+coverage.html
+
+# Temporary files
+*.tmp
+*.log

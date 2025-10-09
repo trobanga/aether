@@ -1,0 +1,68 @@
+name: dimp
+
+networks:
+  vfps:
+
+services:
+  fhir-pseudonymizer:
+    image: ghcr.io/miracum/fhir-pseudonymizer:v2.22.10
+    ports: [ ":8080" ]
+    networks: [ "dimp" ]
+    volumes:
+      - "./anonymization.yaml:/opt/fhir-pseudonymizer/anonymization.yaml:ro"
+    environment:
+      DOTNET_EnableDiagnostics: "0"
+      PseudonymizationService: "Vfps"
+      Vfps__Address: "dns:///vfps:8081"
+      AnonymizationEngineConfigPath: "/opt/fhir-pseudonymizer/anonymization.yaml"
+      UseSystemTextJsonFhirSerializer: "true"
+    depends_on:
+      - vfps
+    cap_drop:
+      - ALL
+    ipc: none
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: true
+    privileged: false
+
+  vfps_db:
+    image: docker.io/library/postgres:17.5@sha256:016154be900bddeac413c2ed2d03b7fdc38799a18e61ecf250d19f0973693de1
+    networks: [ "vfps" ]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vfps
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 1g
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      timeout: 1s
+      interval: 5s
+      retries: 10
+
+  vfps:
+    image: ghcr.io/miracum/vfps:v1.3.6 # x-release-please-version
+    networks: [ "dimp", "vfps" ]
+    ports: [ ":8080", ":8081" ]
+    environment:
+      COMPlus_EnableDiagnostics: "0"
+      ForceRunDatabaseMigrations: "true"
+      ConnectionStrings__PostgreSQL: "Host=vfps_db;Port=5432;Database=vfps;Username=postgres;Password=postgres;Timeout=60;Max Auto Prepare=5;Application Name=vfps;Maximum Pool Size=50;"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    ipc: none
+    cap_drop:
+      - ALL
+    read_only: true
+    privileged: false
+    security_opt:
+      - "no-new-privileges:true"
+    depends_on:
+      vfps_db:
+        condition:
+          service_healthy
