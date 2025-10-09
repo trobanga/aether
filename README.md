@@ -32,13 +32,13 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 git clone https://github.com/trobanga/aether.git
 cd aether
 make build
-make install  # installs to /usr/local/bin (requires sudo)
+sudo make install  # installs to /usr/local/bin
 ```
 
 **Alternative: Install to user directory (no sudo):**
 ```bash
 make build
-make install-local  # installs to ~/bin
+make install-local  # installs to ~/.local/bin
 ```
 
 **Verify installation:**

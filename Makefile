@@ -130,12 +130,12 @@ install: build
 	sudo cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
 	@echo "Install complete. Run '$(BINARY_NAME) --help' to get started."
 
-## install-local: Install binary to ~/bin (no sudo required)
+## install-local: Install binary to ~/.local/bin (no sudo required)
 install-local: build
-	@echo "Installing $(BINARY_NAME) to ~/bin..."
-	@mkdir -p ~/bin
-	cp $(BUILD_DIR)/$(BINARY_NAME) ~/bin/
-	@echo "Install complete. Ensure ~/bin is in your PATH."
+	@echo "Installing $(BINARY_NAME) to ~/.local/bin..."
+	@mkdir -p ~/.local/bin
+	cp $(BUILD_DIR)/$(BINARY_NAME) ~/.local/bin/
+	@echo "Install complete. Ensure ~/.local/bin is in your PATH."
 	@echo "Run '$(BINARY_NAME) --help' to get started."
 
 ## deps: Download and tidy dependencies
