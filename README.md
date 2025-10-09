@@ -226,15 +226,20 @@ go tool cover -html=coverage.out
 
 ```bash
 # Start DIMP test service
-cd .github/test/dimp
-docker compose up -d
+cd .github/test
+make dimp-up
 
-# Run integration tests
-go test ./tests/integration/pipeline_dimp_test.go -v
+# Run DIMP integration tests
+make dimp-test
 
 # Stop service
-docker compose down
+make dimp-down
+
+# Or run all tests with services in one command
+make test-with-services
 ```
+
+See `.github/test/Makefile` for all test infrastructure targets.
 
 ## Design Principles
 

@@ -155,19 +155,16 @@ run: build
 	@echo "Running $(BINARY_NAME) with test data..."
 	$(BUILD_DIR)/$(BINARY_NAME) pipeline start --input ./test-data/
 
-## docker-dimp-up: Start DIMP test service
-docker-dimp-up:
-	@echo "Starting DIMP test service..."
-	cd .github/test/dimp && docker compose up -d
-	@echo "DIMP service running at http://localhost:8083"
-
-## docker-dimp-down: Stop DIMP test service
-docker-dimp-down:
-	@echo "Stopping DIMP test service..."
-	cd .github/test/dimp && docker compose down
-
-## docker-test: Run tests with DIMP service
-docker-test: docker-dimp-up test-integration docker-dimp-down
+## test-services: Manage test services (DIMP, etc.)
+test-services:
+	@echo "Test service management available in .github/test/Makefile"
+	@echo ""
+	@echo "Common commands:"
+	@echo "  cd .github/test && make dimp-up        # Start DIMP service"
+	@echo "  cd .github/test && make dimp-test      # Run DIMP integration tests"
+	@echo "  cd .github/test && make dimp-down      # Stop DIMP service"
+	@echo ""
+	@echo "See .github/test/Makefile for all test infrastructure targets"
 
 ## release: Build release binaries for all platforms
 release: clean build-all
