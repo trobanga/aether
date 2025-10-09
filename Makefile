@@ -1,4 +1,6 @@
 # Makefile for Aether DUP Pipeline CLI
+#
+# For test service management (DIMP, etc.), see .github/test/Makefile
 
 # Project metadata
 PROJECT_NAME := aether
@@ -36,6 +38,9 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@awk 'BEGIN {FS = ":.*##"; printf ""} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@echo ""
+	@echo "For test service management (DIMP, etc.):"
+	@echo "  cd .github/test && make help"
 
 ## build: Build binary for current platform
 build:
@@ -154,17 +159,6 @@ verify:
 run: build
 	@echo "Running $(BINARY_NAME) with test data..."
 	$(BUILD_DIR)/$(BINARY_NAME) pipeline start --input ./test-data/
-
-## test-services: Manage test services (DIMP, etc.)
-test-services:
-	@echo "Test service management available in .github/test/Makefile"
-	@echo ""
-	@echo "Common commands:"
-	@echo "  cd .github/test && make dimp-up        # Start DIMP service"
-	@echo "  cd .github/test && make dimp-test      # Run DIMP integration tests"
-	@echo "  cd .github/test && make dimp-down      # Stop DIMP service"
-	@echo ""
-	@echo "See .github/test/Makefile for all test infrastructure targets"
 
 ## release: Build release binaries for all platforms
 release: clean build-all

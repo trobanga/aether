@@ -1,7 +1,10 @@
 # Makefile for Aether Test Infrastructure
 # Located in .github/test/
 
-.PHONY: help dimp-up dimp-down dimp-test test-with-services clean-test-data
+.PHONY: help services dimp-up dimp-down dimp-test test-with-services clean-test-data
+
+# Default target
+.DEFAULT_GOAL := help
 
 ## help: Display this help message
 help:
@@ -9,13 +12,20 @@ help:
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
+	@echo "Available Services:"
+	@echo "  dimp              DIMP pseudonymization service (http://localhost:8083)"
+	@echo ""
 	@echo "Targets:"
 	@echo "  dimp-up           Start DIMP test service"
 	@echo "  dimp-down         Stop DIMP test service"
 	@echo "  dimp-logs         Show DIMP service logs"
+	@echo "  dimp-restart      Restart DIMP service"
 	@echo "  dimp-test         Run integration tests with DIMP service"
 	@echo "  test-with-services Run all tests with required services"
 	@echo "  clean-test-data   Clean test data and temporary files"
+
+## services: Alias for help
+services: help
 
 ## dimp-up: Start DIMP test service
 dimp-up:
