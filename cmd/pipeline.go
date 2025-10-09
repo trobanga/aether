@@ -56,14 +56,22 @@ var pipelineStatusCmd = &cobra.Command{
 	Long: `Display the current status of a pipeline job.
 
 Shows:
-  - Job ID and current status
-  - Current step being executed
-  - Progress for each step (files processed, errors, retries)
-  - Total files and data processed
-  - Error messages if job failed
+  • Job ID and current status
+  • Current step being executed
+  • Progress for each step (files processed, errors, retries)
+  • Total files and data processed
+  • Error messages if job failed
 
-Example:
-  aether pipeline status abc-123-def`,
+The status command is designed for quick checks (<2s response time).
+Use 'watch' for continuous monitoring:
+  watch -n 5 aether pipeline status <job-id>
+
+Examples:
+  # Check job status
+  aether pipeline status abc-123-def
+
+  # Continuous monitoring (every 5 seconds)
+  watch -n 5 aether pipeline status abc-123-def`,
 	Args: cobra.ExactArgs(1),
 	RunE: runPipelineStatus,
 }
@@ -75,13 +83,34 @@ var pipelineContinueCmd = &cobra.Command{
 	Long: `Resume pipeline execution from the next enabled step.
 
 This command is useful for:
-  - Resuming after terminal close
-  - Continuing after fixing errors
-  - Restarting failed jobs
+  • Resuming after terminal close (session-independent)
+  • Continuing after fixing errors
+  • Restarting failed jobs
+  • Recovering from service downtime
 
 The pipeline will resume from the next enabled step based on your configuration.
+If the current step is incomplete, it will retry that step.
 
-Example:
+Common Scenarios:
+
+  1. Resume after closing terminal:
+     Terminal closed mid-pipeline? Just run continue:
+       aether pipeline continue <job-id>
+
+  2. Retry after fixing transient error:
+     Service was down and retries exhausted? Fix the issue, then:
+       aether pipeline continue <job-id>
+
+  3. Continue after manual data correction:
+     Fixed malformed FHIR data? Resume processing:
+       aether pipeline continue <job-id>
+
+Examples:
+  # Resume a paused job
+  aether pipeline continue abc-123-def
+
+  # Check status first, then resume
+  aether pipeline status abc-123-def
   aether pipeline continue abc-123-def`,
 	Args: cobra.ExactArgs(1),
 	RunE: runPipelineContinue,

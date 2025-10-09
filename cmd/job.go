@@ -28,14 +28,33 @@ var jobListCmd = &cobra.Command{
 	Long: `List all pipeline jobs in the jobs directory.
 
 Shows:
-  - Job ID
-  - Status
-  - Current step
-  - Creation time
-  - File counts
+  • Job ID (full UUID)
+  • Status (✓ completed, → in_progress, ✗ failed, ○ pending)
+  • Current step being executed
+  • Total files processed
+  • Retry count for current step
+  • Job age (elapsed time since creation)
 
-Example:
-  aether job list`,
+Jobs are sorted by creation time (newest first).
+
+Status Symbols:
+  ✓  - Job completed successfully
+  →  - Job in progress
+  ✗  - Job failed
+  ○  - Job pending
+
+Examples:
+  # List all jobs
+  aether job list
+
+  # Continuously monitor all jobs
+  watch -n 5 aether job list
+
+Typical Workflow:
+  1. Start pipeline:  aether pipeline start --input /data
+  2. List jobs:       aether job list
+  3. Get job ID from list
+  4. Check status:    aether pipeline status <job-id>`,
 	RunE: runJobList,
 }
 
