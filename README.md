@@ -31,8 +31,14 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 ```bash
 git clone https://github.com/trobanga/aether.git
 cd aether
-go build -o bin/aether cmd/aether/main.go
-sudo mv bin/aether /usr/local/bin/
+make build
+make install  # installs to /usr/local/bin (requires sudo)
+```
+
+**Alternative: Install to user directory (no sudo):**
+```bash
+make build
+make install-local  # installs to ~/bin
 ```
 
 **Verify installation:**
@@ -197,29 +203,33 @@ jobs_dir: "./jobs"
 
 ```bash
 # Build for current platform
-go build -o bin/aether cmd/aether/main.go
+make build
 
-# Cross-compile for Linux
-GOOS=linux GOARCH=amd64 go build -o bin/aether-linux cmd/aether/main.go
+# Cross-compile for all platforms
+make build-all
 
-# Cross-compile for macOS
-GOOS=darwin GOARCH=amd64 go build -o bin/aether-mac cmd/aether/main.go
+# Build for specific platform
+make build-linux      # Linux amd64
+make build-mac        # macOS amd64
+make build-mac-arm    # macOS arm64 (M1/M2)
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-go test ./... -v
+make test
 
 # Run specific test suites
-go test ./tests/unit/... -v
-go test ./tests/integration/... -v
-go test ./tests/contract/... -v
+make test-unit
+make test-integration
+make test-contract
 
-# Run with coverage
-go test ./... -cover -coverprofile=coverage.out
-go tool cover -html=coverage.out
+# Run with coverage report
+make coverage
+
+# Format code and run checks
+make check
 ```
 
 ### Running Tests with DIMP Service
