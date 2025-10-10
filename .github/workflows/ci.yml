@@ -104,6 +104,11 @@ jobs:
           go-version: '1.25.2'
           cache: true
 
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+
       - name: Start Docker services
         working-directory: .github/test
         run: docker compose up -d
