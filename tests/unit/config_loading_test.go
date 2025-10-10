@@ -17,7 +17,7 @@ func TestConfigLoading_MultipleEnabledSteps(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -60,7 +60,7 @@ func TestConfigLoading_ServiceURLs(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	expectedDIMPUrl := "http://dimp.example.com:8080/fhir"
 	expectedCSVUrl := "http://csv.example.com:9000/convert"
@@ -100,7 +100,7 @@ func TestConfigLoading_RetrySettings(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -133,7 +133,7 @@ func TestConfigLoading_JobsDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	customJobsDir := filepath.Join(tmpDir, "custom_jobs_location")
-	os.MkdirAll(customJobsDir, 0755)
+	_ = os.MkdirAll(customJobsDir, 0755)
 
 	configContent := `
 services:
@@ -164,7 +164,7 @@ func TestConfigLoading_EmptyServiceURLs(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -199,7 +199,7 @@ func TestConfigLoading_PartialServiceURLs(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -246,7 +246,7 @@ func TestConfigLoading_StepOrder(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	// Deliberately specify steps in a specific order
 	// Note: Steps that require services must have URLs configured
@@ -291,7 +291,7 @@ func TestConfigLoading_MinimalConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	// Absolute minimal config
 	configContent := `

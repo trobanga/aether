@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,7 @@ func TestPipelineDIMP_EndToEnd(t *testing.T) {
 		assert.Equal(t, "/$de-identify", r.URL.Path)
 
 		var resource map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&resource)
+		_ = json.NewDecoder(r.Body).Decode(&resource)
 
 		// Pseudonymize the resource
 		resource["id"] = "pseudo-" + resource["id"].(string)
@@ -29,7 +28,7 @@ func TestPipelineDIMP_EndToEnd(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resource)
+		_ = json.NewEncoder(w).Encode(resource)
 	}))
 	defer server.Close()
 
@@ -81,10 +80,10 @@ func TestPipelineDIMP_EndToEnd(t *testing.T) {
 func TestPipelineDIMP_MultipleFiles(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var resource map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&resource)
+		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resource)
+		_ = json.NewEncoder(w).Encode(resource)
 	}))
 	defer server.Close()
 
@@ -124,10 +123,10 @@ func TestPipelineDIMP_MultipleFiles(t *testing.T) {
 func TestPipelineDIMP_ProgressReporting(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var resource map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&resource)
+		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resource)
+		_ = json.NewEncoder(w).Encode(resource)
 	}))
 	defer server.Close()
 
@@ -163,7 +162,7 @@ func TestPipelineDIMP_ProgressReporting(t *testing.T) {
 func TestPipelineDIMP_ServiceError_NonRetryable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": {"code": "invalid", "message": "Bad resource"}}`))
+		_, _ = w.Write([]byte(`{"error": {"code": "invalid", "message": "Bad resource"}}`))
 	}))
 	defer server.Close()
 
@@ -203,10 +202,10 @@ func TestPipelineDIMP_ServiceError_Retryable(t *testing.T) {
 		}
 		// Succeed on 3rd attempt
 		var resource map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&resource)
+		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resource)
+		_ = json.NewEncoder(w).Encode(resource)
 	}))
 	defer server.Close()
 
@@ -268,51 +267,4 @@ func TestPipelineDIMP_StepDisabled(t *testing.T) {
 	t.Skip("Skipping until internal/pipeline/dimp.go is implemented")
 }
 
-// Helper functions
-func writeNDJSON(t *testing.T, filepath string, resources []map[string]interface{}) {
-	file, err := os.Create(filepath)
-	assert.NoError(t, err)
-	defer file.Close()
-
-	for _, resource := range resources {
-		data, err := json.Marshal(resource)
-		assert.NoError(t, err)
-		file.Write(data)
-		file.Write([]byte("\n"))
-	}
-}
-
-func readNDJSON(t *testing.T, filepath string) []map[string]interface{} {
-	data, err := os.ReadFile(filepath)
-	assert.NoError(t, err)
-
-	var resources []map[string]interface{}
-	for _, line := range splitLines(string(data)) {
-		if line == "" {
-			continue
-		}
-		var resource map[string]interface{}
-		err := json.Unmarshal([]byte(line), &resource)
-		assert.NoError(t, err)
-		resources = append(resources, resource)
-	}
-
-	return resources
-}
-
-func splitLines(s string) []string {
-	var lines []string
-	var current string
-	for _, ch := range s {
-		if ch == '\n' {
-			lines = append(lines, current)
-			current = ""
-		} else {
-			current += string(ch)
-		}
-	}
-	if current != "" {
-		lines = append(lines, current)
-	}
-	return lines
-}
+// Helper functions removed - were unused as tests are currently skipped

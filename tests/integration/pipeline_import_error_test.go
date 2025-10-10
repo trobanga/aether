@@ -84,7 +84,7 @@ func TestPipelineImportError_HTTP404(t *testing.T) {
 	// Create server that returns 404
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Not Found"))
+		_, _ = w.Write([]byte("Not Found"))
 	}))
 	defer server.Close()
 
@@ -135,7 +135,7 @@ func TestPipelineImportError_HTTP500WithRetry(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts++
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -304,7 +304,7 @@ func TestPipelineImportError_NetworkTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(5 * time.Second) // Delay longer than client timeout
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"resourceType":"Patient"}`))
+		_, _ = w.Write([]byte(`{"resourceType":"Patient"}`))
 	}))
 	defer server.Close()
 
@@ -348,7 +348,7 @@ func TestPipelineImportError_StatePersistence(t *testing.T) {
 	// Create server that always fails
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
+		_, _ = w.Write([]byte("Bad Request"))
 	}))
 	defer server.Close()
 
@@ -402,7 +402,7 @@ func TestPipelineImportError_PartialDownloadCleanup(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		// Write partial data then close connection
-		w.Write([]byte(`{"resourceType":"Patient","id":"1"}
+		_, _ = w.Write([]byte(`{"resourceType":"Patient","id":"1"}
 {"resourceType":"Patient","id":"2"}`))
 		// Simulate connection drop by using the underlying hijacker
 		// (In real test, the connection would be forcibly closed)

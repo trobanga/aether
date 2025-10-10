@@ -25,7 +25,7 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 		t.Skip("Skipping test: DIMP service not available at localhost:32861. Run docker-compose up dimp-service to enable this test.")
 	}
 	if resp != nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// Setup

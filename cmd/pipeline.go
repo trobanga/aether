@@ -124,7 +124,9 @@ func init() {
 
 	// Flags for pipeline start
 	pipelineStartCmd.Flags().StringVarP(&inputSource, "input", "i", "", "Input source (local directory or HTTP URL) [required]")
-	pipelineStartCmd.MarkFlagRequired("input")
+	if err := pipelineStartCmd.MarkFlagRequired("input"); err != nil {
+		panic(fmt.Sprintf("failed to mark 'input' flag as required: %v", err))
+	}
 	pipelineStartCmd.Flags().BoolVar(&noProgress, "no-progress", false, "Disable progress indicators")
 }
 
@@ -226,9 +228,13 @@ func runPipelineStart(cmd *cobra.Command, args []string) error {
 	// Lock is automatically released when function returns (via defer)
 	lock, err := services.AcquireJobLock(config.JobsDir, job.JobID, logger)
 	if err != nil {
-		return fmt.Errorf("cannot start pipeline: %w\n\nAnother process may be working on this job.", err)
+		return fmt.Errorf("cannot start pipeline: %w\n\nAnother process may be working on this job", err)
 	}
-	defer lock.Release()
+	defer func() {
+		if err := lock.Release(); err != nil {
+			logger.Error("Failed to release job lock", "error", err)
+		}
+	}()
 
 	// Start the job (with lock held)
 	startedJob := pipeline.StartJob(job)
@@ -384,9 +390,13 @@ func runPipelineContinue(cmd *cobra.Command, args []string) error {
 	// Acquire job lock to prevent concurrent execution
 	lock, err := services.AcquireJobLock(config.JobsDir, jobID, logger)
 	if err != nil {
-		return fmt.Errorf("cannot continue pipeline: %w\n\nAnother process may be working on this job. Wait for it to complete or check job status.", err)
+		return fmt.Errorf("cannot continue pipeline: %w\n\nAnother process may be working on this job. Wait for it to complete or check job status", err)
 	}
-	defer lock.Release()
+	defer func() {
+		if err := lock.Release(); err != nil {
+			logger.Error("Failed to release job lock", "error", err)
+		}
+	}()
 
 	// Get current step and check if it's completed
 	currentStepName := models.StepName(job.CurrentStep)

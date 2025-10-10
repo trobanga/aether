@@ -24,7 +24,7 @@ func TestETACalculator_InsufficientData(t *testing.T) {
 
 	// With only one sample, ETA should still be invalid
 	calc.RecordProgress(10)
-	eta, valid = calc.CalculateETA(100, 10)
+	_, valid = calc.CalculateETA(100, 10)
 	assert.False(t, valid, "ETA should be invalid with only one sample")
 }
 

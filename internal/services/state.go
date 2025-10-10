@@ -82,7 +82,7 @@ func SaveJobState(jobsBaseDir string, job *models.PipelineJob) error {
 	statePath := GetStateFilePath(jobsBaseDir, job.JobID)
 	if err := os.Rename(tempFile, statePath); err != nil {
 		// Cleanup temp file on failure
-		os.Remove(tempFile)
+		_ = os.Remove(tempFile)
 		return fmt.Errorf("failed to save job state: %w", err)
 	}
 

@@ -117,7 +117,7 @@ func (c *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 					lastErr = statusErr
 
 					// Close response body before retry
-					resp.Body.Close()
+					_ = resp.Body.Close()
 
 					// Wait before retry
 					if attempt < c.retryConfig.MaxAttempts-1 {

@@ -12,7 +12,7 @@ import (
 func TestDIMPClient_Pseudonymize_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var resource map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&resource)
+		_ = json.NewDecoder(r.Body).Decode(&resource)
 
 		// Return pseudonymized version
 		resource["id"] = "pseudonym-123"
@@ -23,7 +23,7 @@ func TestDIMPClient_Pseudonymize_Success(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resource)
+		_ = json.NewEncoder(w).Encode(resource)
 	}))
 	defer server.Close()
 
@@ -63,13 +63,13 @@ func TestDIMPClient_Pseudonymize_PreservesResourceType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var resource map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&resource)
+				_ = json.NewDecoder(r.Body).Decode(&resource)
 
 				// Return pseudonymized version with same resourceType
 				resource["id"] = "pseudo-" + resource["id"].(string)
 
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resource)
+				_ = json.NewEncoder(w).Encode(resource)
 			}))
 			defer server.Close()
 
@@ -95,7 +95,7 @@ func TestDIMPClient_Pseudonymize_PreservesResourceType(t *testing.T) {
 func TestDIMPClient_Pseudonymize_HandlesEmptyResource(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": {"code": "empty_resource", "message": "Empty resource"}}`))
+		_, _ = w.Write([]byte(`{"error": {"code": "empty_resource", "message": "Empty resource"}}`))
 	}))
 	defer server.Close()
 

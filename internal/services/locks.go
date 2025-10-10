@@ -41,7 +41,7 @@ func AcquireJobLock(jobsDir string, jobID string, logger *lib.Logger) (*JobLock,
 	// flock() is advisory - cooperating processes must check the lock
 	err = syscall.Flock(int(lockFile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
 	if err != nil {
-		lockFile.Close()
+		_ = lockFile.Close()
 		if err == syscall.EWOULDBLOCK {
 			return nil, fmt.Errorf("job %s is locked by another process", jobID)
 		}
@@ -50,10 +50,10 @@ func AcquireJobLock(jobsDir string, jobID string, logger *lib.Logger) (*JobLock,
 
 	// Write current process ID and timestamp to lock file for debugging
 	lockInfo := fmt.Sprintf("pid=%d\ntime=%s\n", os.Getpid(), time.Now().Format(time.RFC3339))
-	lockFile.Truncate(0)
-	lockFile.Seek(0, 0)
-	lockFile.WriteString(lockInfo)
-	lockFile.Sync()
+	_ = lockFile.Truncate(0)
+	_, _ = lockFile.Seek(0, 0)
+	_, _ = lockFile.WriteString(lockInfo)
+	_ = lockFile.Sync()
 
 	logger.Debug("Acquired job lock", "job_id", jobID, "pid", os.Getpid())
 
@@ -107,7 +107,9 @@ func IsJobLocked(jobsDir string, jobID string) bool {
 		// Can't open lock file - assume not locked
 		return false
 	}
-	defer lockFile.Close()
+	defer func() {
+		_ = lockFile.Close()
+	}()
 
 	// Try to acquire lock (non-blocking)
 	err = syscall.Flock(int(lockFile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
@@ -117,7 +119,7 @@ func IsJobLocked(jobsDir string, jobID string) bool {
 	}
 
 	// We acquired the lock - release it immediately
-	syscall.Flock(int(lockFile.Fd()), syscall.LOCK_UN)
+	_ = syscall.Flock(int(lockFile.Fd()), syscall.LOCK_UN)
 	return false
 }
 
@@ -130,7 +132,11 @@ func WithJobLock(jobsDir string, jobID string, logger *lib.Logger, fn func() err
 	if err != nil {
 		return err
 	}
-	defer lock.Release()
+	defer func() {
+		if err := lock.Release(); err != nil {
+			logger.Error("Failed to release job lock", "error", err)
+		}
+	}()
 
 	// Execute function with lock held
 	return fn()

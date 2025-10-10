@@ -24,13 +24,13 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 	// Setup mock DIMP service
 	dimpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var resource map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&resource)
+		_ = json.NewDecoder(r.Body).Decode(&resource)
 
 		// Simple pseudonymization
 		resource["id"] = "pseudo-" + resource["id"].(string)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resource)
+		_ = json.NewEncoder(w).Encode(resource)
 	}))
 	defer dimpServer.Close()
 
@@ -38,8 +38,8 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 	tmpDir := t.TempDir()
 	jobsDir := filepath.Join(tmpDir, "jobs")
 	importDir := filepath.Join(tmpDir, "import_data")
-	os.MkdirAll(importDir, 0755)
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(importDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	// Create test FHIR data
 	testFile := filepath.Join(importDir, "test.ndjson")
@@ -133,7 +133,7 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 func TestPipelineMultiStep_StepSequencing(t *testing.T) {
 	tmpDir := t.TempDir()
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
@@ -159,8 +159,8 @@ func TestPipelineMultiStep_OnlyImportEnabled(t *testing.T) {
 	tmpDir := t.TempDir()
 	jobsDir := filepath.Join(tmpDir, "jobs")
 	importDir := filepath.Join(tmpDir, "import_data")
-	os.MkdirAll(importDir, 0755)
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(importDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	// Create test FHIR data
 	testFile := filepath.Join(importDir, "test.ndjson")
@@ -238,7 +238,7 @@ jobs_dir: "` + jobsDir + `"
 	require.NoError(t, err)
 
 	// Create jobs directory
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	// Load config
 	config, err := services.LoadConfig(configFile)
@@ -261,18 +261,18 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 	// Setup mock DIMP service
 	dimpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var resource map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&resource)
+		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resource)
+		_ = json.NewEncoder(w).Encode(resource)
 	}))
 	defer dimpServer.Close()
 
 	tmpDir := t.TempDir()
 	jobsDir := filepath.Join(tmpDir, "jobs")
 	importDir := filepath.Join(tmpDir, "import_data")
-	os.MkdirAll(importDir, 0755)
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(importDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	// Create test data
 	testFile := filepath.Join(importDir, "test.ndjson")
@@ -349,13 +349,15 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 func writeNDJSONToFile(t *testing.T, filepath string, resources []map[string]interface{}) {
 	file, err := os.Create(filepath)
 	require.NoError(t, err)
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	for _, resource := range resources {
 		data, err := json.Marshal(resource)
 		require.NoError(t, err)
-		file.Write(data)
-		file.Write([]byte("\n"))
+		_, _ = file.Write(data)
+		_, _ = file.Write([]byte("\n"))
 	}
 }
 

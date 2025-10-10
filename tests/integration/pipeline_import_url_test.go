@@ -30,7 +30,7 @@ func TestPipelineImportURL_EndToEnd(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-ndjson")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(testContent))
+		_, _ = w.Write([]byte(testContent))
 	}))
 	defer server.Close()
 
@@ -91,7 +91,7 @@ func TestPipelineImportURL_EndToEnd(t *testing.T) {
 	assert.Equal(t, 5, lineCount, "Should count 5 resources")
 
 	// Step 4: Verify state persistence
-	pipeline.UpdateJob(jobsDir, importedJob)
+	_ = pipeline.UpdateJob(jobsDir, importedJob)
 	reloadedJob, err := pipeline.LoadJob(jobsDir, job.JobID)
 	require.NoError(t, err, "Should reload job from disk")
 	assert.Equal(t, importedJob.Status, reloadedJob.Status, "Status should be persisted")
@@ -108,11 +108,11 @@ func TestPipelineImportURL_WithRetry(t *testing.T) {
 		attempts++
 		if attempts < 3 {
 			w.WriteHeader(http.StatusServiceUnavailable) // 503 is transient
-			w.Write([]byte("Service Unavailable"))
+			_, _ = w.Write([]byte("Service Unavailable"))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"resourceType":"Patient","id":"1"}
+		_, _ = w.Write([]byte(`{"resourceType":"Patient","id":"1"}
 {"resourceType":"Patient","id":"2"}`))
 	}))
 	defer server.Close()
@@ -161,7 +161,7 @@ func TestPipelineImportURL_LargeFile(t *testing.T) {
 		w.Header().Set("Content-Type", "application/x-ndjson")
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(testContent)))
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(testContent))
+		_, _ = w.Write([]byte(testContent))
 	}))
 	defer server.Close()
 
@@ -215,7 +215,7 @@ func TestPipelineImportURL_ProgressDisplay(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write(testContent)
+		_, _ = w.Write(testContent)
 	}))
 	defer server.Close()
 
@@ -279,7 +279,7 @@ func TestPipelineImportURL_MultipleURLs(t *testing.T) {
 		content := fmt.Sprintf(`{"resourceType":"Patient","id":"patient-%d"}`, i)
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(content))
+			_, _ = w.Write([]byte(content))
 		}))
 		defer server.Close()
 		urls = append(urls, server.URL+fmt.Sprintf("/Patient_%d.ndjson", i))
@@ -338,7 +338,7 @@ func TestPipelineImportURL_FilenameFromURL(t *testing.T) {
 			// Create test server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"resourceType":"Bundle"}`))
+				_, _ = w.Write([]byte(`{"resourceType":"Bundle"}`))
 			}))
 			defer server.Close()
 
@@ -382,7 +382,7 @@ func TestPipelineImportURL_ConcurrentDownloads(t *testing.T) {
 		// Simulate some processing time
 		time.Sleep(10 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"resourceType":"Patient"}`))
+		_, _ = w.Write([]byte(`{"resourceType":"Patient"}`))
 	}))
 	defer server.Close()
 
