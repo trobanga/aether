@@ -93,14 +93,14 @@
   - Run: `git add .github/workflows/ci.yml && git commit -m "feat: implement lint job in CI pipeline" && git push`
   - Verify lint job runs successfully on clean code
 
-- [ ] **T009** [US1] Execute validation test: Introduce linting violation
+- [x] **T009** [US1] Execute validation test: Introduce linting violation
   - Modify a Go file to add intentional violation (e.g., unused variable)
   - Commit and push: `git commit -m "test: intentional lint violation for CI validation"`
   - Verify: Lint job FAILS with specific violation details
   - Verify: PR shows "checks failed" status
   - Verify: Error message includes file path and line number
 
-- [ ] **T010** [US1] Execute validation test: Fix and verify pass
+- [x] **T010** [US1] Execute validation test: Fix and verify pass
   - Remove the linting violation
   - Commit and push: `git commit -m "fix: remove lint violation"`
   - Verify: Lint job PASSES

@@ -1,4 +1,4 @@
-name: CodeQL Analysis
+name: Code Analysis
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '30 1 * * 0'  # Weekly on Sunday at 1:30 AM
+    - cron: '15 7 * * 2' 
 
 jobs:
   lint:
