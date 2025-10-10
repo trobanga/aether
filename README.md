@@ -293,10 +293,6 @@ Aether follows three core principles defined in the [project constitution](.spec
 - **Concurrent Job Safety**: File locks prevent multiple processes from corrupting job state
 - **Functional Programming Compliance**: Immutable data structures with pure functions
 
-### In Progress 🚧
-- **Performance Validation**: Testing with 10GB+ datasets
-- **Documentation**: Enhanced error messages and user guidance
-
 ### Planned 📋
 - **Format Conversion**: CSV and Parquet output (requires external conversion services)
 - **Enhanced Validation**: FHIR schema validation step
