@@ -283,21 +283,26 @@ Aether follows three core principles defined in the [project constitution](.spec
 ## Roadmap
 
 ### Completed ✅
-- Phase 1-5: Core functionality (import, resumption, DIMP pseudonymization)
-- File-based state persistence
-- Progress indicators with ETA and throughput
-- Hybrid retry strategy
-- Session-independent job management
+- **FHIR Data Import**: Local directory and HTTP URL support with progress tracking
+- **Session-Independent Operation**: File-based state persistence for cross-session resumption
+- **DIMP Pseudonymization**: Integration with DIMP service for de-identification
+- **Hybrid Retry Strategy**: Automatic retries for transient errors, manual for validation failures
+- **Progress Indicators**: Real-time progress bars with ETA, throughput, and completion percentages
+- **Job Management**: List, status, and continue operations for all jobs
+- **Manual Step Execution**: Run individual pipeline steps via `job run --step` command
+- **Concurrent Job Safety**: File locks prevent multiple processes from corrupting job state
+- **Functional Programming Compliance**: Immutable data structures with pure functions
 
-### Planned
-- **Phase 6**: CSV/Parquet conversion (requires external services)
-- **Phase 7**: Polish and documentation improvements
-- Enhanced error messages and guidance
-- Performance testing with 10GB+ datasets
-- Concurrent job safety with file locks
-- Manual step execution (`job run --step`)
+### In Progress 🚧
+- **Performance Validation**: Testing with 10GB+ datasets
+- **Documentation**: Enhanced error messages and user guidance
 
-See [tasks.md](specs/001-dup-pipeline-we/tasks.md) for detailed task breakdown.
+### Planned 📋
+- **Format Conversion**: CSV and Parquet output (requires external conversion services)
+- **Enhanced Validation**: FHIR schema validation step
+- **Additional Output Formats**: Support for more medical data formats
+
+See [tasks.md](specs/001-dup-pipeline-we/tasks.md) for detailed implementation tracking.
 
 ## Contributing
 
@@ -320,4 +325,4 @@ Built for medical research workflows with TORCH FHIR extractions. Designed for s
 
 ---
 
-**Status**: Active Development | **Branch**: `001-dup-pipeline-we` | **Phase**: 5/7 Complete
+**Status**: Active Development | **Branch**: `001-dup-pipeline-we` | **Core Features**: Complete ✅
