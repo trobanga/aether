@@ -293,7 +293,7 @@ func TestPipelineImportLocal_JobListAndStatus(t *testing.T) {
 	// Execute import for first job
 	startedJob1 := pipeline.StartJob(job1)
 	importedJob1, _ := pipeline.ExecuteImportStep(startedJob1, logger, httpClient, false)
-	pipeline.UpdateJob(jobsDir, importedJob1)
+	_ = pipeline.UpdateJob(jobsDir, importedJob1)
 
 	// List all jobs
 	jobIDs, err := services.ListAllJobs(jobsDir)

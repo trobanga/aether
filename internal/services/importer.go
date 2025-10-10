@@ -90,7 +90,11 @@ func copyFile(sourcePath string, destDir string, logger *lib.Logger) (models.FHI
 	if err != nil {
 		return models.FHIRDataFile{}, fmt.Errorf("failed to open source file: %w", err)
 	}
-	defer srcFile.Close()
+	defer func() {
+		if err := srcFile.Close(); err != nil {
+			logger.Error("Failed to close source file", "error", err)
+		}
+	}()
 
 	// Get source file info
 	srcInfo, err := srcFile.Stat()
@@ -107,7 +111,11 @@ func copyFile(sourcePath string, destDir string, logger *lib.Logger) (models.FHI
 	if err != nil {
 		return models.FHIRDataFile{}, fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer destFile.Close()
+	defer func() {
+		if err := destFile.Close(); err != nil {
+			logger.Error("Failed to close destination file", "error", err)
+		}
+	}()
 
 	// Copy file contents
 	bytesWritten, err := io.Copy(destFile, srcFile)

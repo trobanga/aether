@@ -39,7 +39,11 @@ func DownloadFromURL(url string, destinationDir string, httpClient *HTTPClient, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer destFile.Close()
+	defer func() {
+		if err := destFile.Close(); err != nil {
+			logger.Error("Failed to close destination file", "error", err)
+		}
+	}()
 
 	// Start spinner for connection phase (FR-029c: unknown duration)
 	spinner := ui.NewSpinner(fmt.Sprintf("Connecting to %s", url))
@@ -66,7 +70,7 @@ func DownloadFromURL(url string, destinationDir string, httpClient *HTTPClient, 
 
 	if err != nil {
 		// Clean up failed download
-		os.Remove(destPath)
+		_ = os.Remove(destPath)
 		return nil, fmt.Errorf("download failed: %w", err)
 	}
 
@@ -121,7 +125,11 @@ func DownloadFromURLWithProgress(url string, destinationDir string, httpClient *
 	if err != nil {
 		return nil, fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer destFile.Close()
+	defer func() {
+		if err := destFile.Close(); err != nil {
+			logger.Error("Failed to close destination file", "error", err)
+		}
+	}()
 
 	// Start with spinner for connection phase
 	spinner := ui.NewSpinner(fmt.Sprintf("Connecting to %s", url))
@@ -140,7 +148,7 @@ func DownloadFromURLWithProgress(url string, destinationDir string, httpClient *
 	spinner.Stop(err == nil)
 
 	if err != nil {
-		os.Remove(destPath)
+		_ = os.Remove(destPath)
 		return nil, fmt.Errorf("download failed: %w", err)
 	}
 

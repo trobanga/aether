@@ -112,7 +112,9 @@ func init() {
 
 	// Add --step flag to job run command
 	jobRunCmd.Flags().StringVar(&stepFlag, "step", "", "Pipeline step to execute (required)")
-	jobRunCmd.MarkFlagRequired("step")
+	if err := jobRunCmd.MarkFlagRequired("step"); err != nil {
+		panic(fmt.Sprintf("failed to mark 'step' flag as required: %v", err))
+	}
 }
 
 func runJobList(cmd *cobra.Command, args []string) error {
@@ -268,9 +270,13 @@ func runJobRun(cmd *cobra.Command, args []string) error {
 	logger := lib.DefaultLogger
 	lock, err := services.AcquireJobLock(config.JobsDir, jobID, logger)
 	if err != nil {
-		return fmt.Errorf("cannot execute step: %w\n\nAnother process may be working on this job. Wait for it to complete or check job status.", err)
+		return fmt.Errorf("cannot execute step: %w\n\nAnother process may be working on this job. Wait for it to complete or check job status", err)
 	}
-	defer lock.Release()
+	defer func() {
+		if err := lock.Release(); err != nil {
+			logger.Error("Failed to release job lock", "error", err)
+		}
+	}()
 
 	// Execute the step (with lock held)
 	err = executeStepManually(job, stepName, config, logger)
@@ -360,7 +366,7 @@ func executeStepManually(job *models.PipelineJob, stepName models.StepName, conf
 		return fmt.Errorf("CSV conversion step not yet implemented")
 
 	case models.StepParquetConversion:
-		return fmt.Errorf("Parquet conversion step not yet implemented")
+		return fmt.Errorf("parquet conversion step not yet implemented")
 
 	default:
 		return fmt.Errorf("unknown step: %s", stepName)

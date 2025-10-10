@@ -25,7 +25,7 @@ func TestDownloadFromURL_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-ndjson")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(testContent))
+		_, _ = w.Write([]byte(testContent))
 	}))
 	defer server.Close()
 
@@ -65,7 +65,7 @@ func TestDownloadFromURL_HTTP404(t *testing.T) {
 	// Create test server that returns 404
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Not Found"))
+		_, _ = w.Write([]byte("Not Found"))
 	}))
 	defer server.Close()
 
@@ -93,7 +93,7 @@ func TestDownloadFromURL_HTTP500(t *testing.T) {
 	// Create test server that returns 500
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -162,7 +162,7 @@ func TestDownloadFromURL_FilenameFallback(t *testing.T) {
 			// Create test server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(testContent))
+				_, _ = w.Write([]byte(testContent))
 			}))
 			defer server.Close()
 
@@ -195,7 +195,7 @@ func TestDownloadFromURL_WithProgress(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write(testContent)
+		_, _ = w.Write(testContent)
 	}))
 	defer server.Close()
 
@@ -224,7 +224,7 @@ func TestDownloadFromURL_ProgressCallback(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write(testContent)
+		_, _ = w.Write(testContent)
 	}))
 	defer server.Close()
 
@@ -310,11 +310,11 @@ func TestHTTPClient_Retry(t *testing.T) {
 		attempts++
 		if attempts < 3 {
 			w.WriteHeader(http.StatusServiceUnavailable) // 503 is transient
-			w.Write([]byte("Service Unavailable"))
+			_, _ = w.Write([]byte("Service Unavailable"))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"resourceType":"Patient"}`))
+		_, _ = w.Write([]byte(`{"resourceType":"Patient"}`))
 	}))
 	defer server.Close()
 
@@ -350,7 +350,7 @@ func TestHTTPClient_NoRetryFor4xx(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts++
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
+		_, _ = w.Write([]byte("Bad Request"))
 	}))
 	defer server.Close()
 

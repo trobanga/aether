@@ -13,7 +13,7 @@ func TestDIMPClient_Error_400BadRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": map[string]string{
 				"code":    "invalid_resource",
 				"message": "Missing required field: resourceType",
@@ -43,7 +43,7 @@ func TestDIMPClient_Error_422UnprocessableEntity(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": map[string]string{
 				"code":    "invalid_schema",
 				"message": "Does not conform to FHIR schema",
@@ -74,7 +74,7 @@ func TestDIMPClient_Error_500InternalServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": {"code": "internal_error", "message": "Database error"}}`))
+		_, _ = w.Write([]byte(`{"error": {"code": "internal_error", "message": "Database error"}}`))
 	}))
 	defer server.Close()
 
@@ -100,7 +100,7 @@ func TestDIMPClient_Error_502BadGateway(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("VFPS unavailable"))
+		_, _ = w.Write([]byte("VFPS unavailable"))
 	}))
 	defer server.Close()
 
@@ -126,7 +126,7 @@ func TestDIMPClient_Error_503ServiceUnavailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("Service overloaded"))
+		_, _ = w.Write([]byte("Service overloaded"))
 	}))
 	defer server.Close()
 
@@ -152,7 +152,7 @@ func TestDIMPClient_Error_504GatewayTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		w.WriteHeader(http.StatusGatewayTimeout)
-		w.Write([]byte("Request timeout"))
+		_, _ = w.Write([]byte("Request timeout"))
 	}))
 	defer server.Close()
 
@@ -194,7 +194,7 @@ func TestDIMPClient_Error_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json{"))
+		_, _ = w.Write([]byte("invalid json{"))
 	}))
 	defer server.Close()
 

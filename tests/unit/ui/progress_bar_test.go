@@ -77,7 +77,7 @@ func TestProgressBar_Percentage(t *testing.T) {
 			bar := ui.NewProgressBarWithWriter(tt.total, "Test", &buf)
 
 			if tt.current > 0 {
-				bar.Set(tt.current)
+				_ = bar.Set(tt.current)
 			}
 
 			percentage := bar.GetPercentage()
@@ -143,13 +143,13 @@ func TestProgressBar_UpdateFrequency(t *testing.T) {
 
 	// Add multiple small increments rapidly
 	for i := 0; i < 10; i++ {
-		bar.Add(10)
+		_ = bar.Add(10)
 	}
 
 	// Verify progress bar doesn't panic with rapid updates
 	// (throttling is handled internally by progressbar library)
 	assert.Equal(t, 10.0, bar.GetPercentage())
-	bar.Finish()
+	_ = bar.Finish()
 }
 
 // Test FR-029a requirement: Progress bar format verification
@@ -157,8 +157,8 @@ func TestProgressBar_Format(t *testing.T) {
 	var buf bytes.Buffer
 	bar := ui.NewProgressBarWithWriter(100, "Import FHIR files", &buf)
 
-	bar.Add(50)
-	bar.Finish()
+	_ = bar.Add(50)
+	_ = bar.Finish()
 
 	// Verify some output was written (basic check)
 	output := buf.String()
@@ -180,8 +180,8 @@ func TestProgressBar_OperationName(t *testing.T) {
 			var buf bytes.Buffer
 			bar := ui.NewProgressBarWithWriter(100, tt.description, &buf)
 
-			bar.Add(100)
-			bar.Finish()
+			_ = bar.Add(100)
+			_ = bar.Finish()
 
 			// Verify bar was created with description
 			assert.NotNil(t, bar)

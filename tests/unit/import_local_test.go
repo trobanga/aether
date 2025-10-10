@@ -194,8 +194,8 @@ func TestValidateImportSource_LocalDirectory(t *testing.T) {
 			name: "Valid directory with NDJSON files",
 			setupFunc: func() string {
 				dir := filepath.Join(tempDir, "valid")
-				os.MkdirAll(dir, 0755)
-				os.WriteFile(filepath.Join(dir, "test.ndjson"), []byte("{}"), 0644)
+				_ = os.MkdirAll(dir, 0755)
+				_ = os.WriteFile(filepath.Join(dir, "test.ndjson"), []byte("{}"), 0644)
 				return dir
 			},
 			expectError: false,
@@ -212,7 +212,7 @@ func TestValidateImportSource_LocalDirectory(t *testing.T) {
 			name: "Path is a file, not directory",
 			setupFunc: func() string {
 				file := filepath.Join(tempDir, "file.txt")
-				os.WriteFile(file, []byte("test"), 0644)
+				_ = os.WriteFile(file, []byte("test"), 0644)
 				return file
 			},
 			expectError: true,
@@ -222,8 +222,8 @@ func TestValidateImportSource_LocalDirectory(t *testing.T) {
 			name: "Directory with no NDJSON files",
 			setupFunc: func() string {
 				dir := filepath.Join(tempDir, "empty")
-				os.MkdirAll(dir, 0755)
-				os.WriteFile(filepath.Join(dir, "readme.txt"), []byte("test"), 0644)
+				_ = os.MkdirAll(dir, 0755)
+				_ = os.WriteFile(filepath.Join(dir, "readme.txt"), []byte("test"), 0644)
 				return dir
 			},
 			expectError: true,

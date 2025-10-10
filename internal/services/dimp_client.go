@@ -59,7 +59,11 @@ func (c *DIMPClient) Pseudonymize(resource map[string]interface{}) (map[string]i
 			"error", err)
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.logger.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	// Check for HTTP error status
 	if resp.StatusCode >= 400 {

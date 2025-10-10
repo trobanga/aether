@@ -42,7 +42,7 @@ func TestDIMPService_Pseudonymize_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(pseudonymized)
+		_ = json.NewEncoder(w).Encode(pseudonymized)
 	}))
 	defer server.Close()
 
@@ -74,7 +74,7 @@ func TestDIMPService_400BadRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": map[string]string{
 				"code":    "invalid_resource",
 				"message": "Missing required field: resourceType",
@@ -105,7 +105,7 @@ func TestDIMPService_500InternalServerError(t *testing.T) {
 		callCount++
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": map[string]string{
 				"code":    "internal_error",
 				"message": "Database connection failed",
@@ -133,7 +133,7 @@ func TestDIMPService_502BadGateway(t *testing.T) {
 	// Mock DIMP service returning 502 (VFPS unavailable)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
-		w.Write([]byte("VFPS service unavailable"))
+		_, _ = w.Write([]byte("VFPS service unavailable"))
 	}))
 	defer server.Close()
 
@@ -146,7 +146,7 @@ func TestDIMPService_422UnprocessableEntity(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": map[string]string{
 				"code":    "invalid_schema",
 				"message": "Resource does not conform to FHIR schema",

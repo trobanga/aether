@@ -204,7 +204,7 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 		if err := json.Unmarshal([]byte(line), &resource); err != nil {
 			// Clear progress bar before logging error
 			if progressBar != nil {
-				progressBar.Clear()
+				_ = progressBar.Clear()
 			}
 			logger.Error("Failed to parse FHIR resource",
 				"file", filepath.Base(inputFile),
@@ -228,7 +228,7 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 		if err != nil {
 			// Clear progress bar before logging error
 			if progressBar != nil {
-				progressBar.Clear()
+				_ = progressBar.Clear()
 			}
 			logger.Error("Failed to pseudonymize FHIR resource",
 				"file", filepath.Base(inputFile),
@@ -256,7 +256,7 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 
 		// Update progress
 		if progressBar != nil {
-			progressBar.Add(1)
+			_ = progressBar.Add(1)
 		}
 	}
 
@@ -266,7 +266,7 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 
 	// Finish progress bar
 	if progressBar != nil {
-		progressBar.Finish()
+		_ = progressBar.Finish()
 	}
 
 	// Close output file before rename (defer will also close, but explicit close ensures flush)
