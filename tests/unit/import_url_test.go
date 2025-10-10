@@ -245,7 +245,7 @@ func TestDownloadFromURL_ProgressCallback(t *testing.T) {
 	// Create destination file
 	file, err := os.Create(destFile)
 	require.NoError(t, err)
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Download with progress callback
 	bytesDownloaded, err := httpClient.DownloadWithProgress(server.URL+"/data.ndjson", file, progressCallback)

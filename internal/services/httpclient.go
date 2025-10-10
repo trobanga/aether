@@ -173,7 +173,7 @@ func (c *HTTPClient) Download(url string, writer io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
@@ -195,7 +195,7 @@ func (c *HTTPClient) DownloadWithProgress(url string, writer io.Writer, progress
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)

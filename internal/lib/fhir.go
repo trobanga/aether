@@ -64,7 +64,7 @@ func ReadNDJSONFile(filePath string, callback func(FHIRResource) error) (int, er
 	if err != nil {
 		return 0, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	return ReadNDJSON(file, callback)
 }
