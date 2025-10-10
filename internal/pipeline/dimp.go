@@ -81,7 +81,7 @@ func ExecuteDIMPStep(job *models.PipelineJob, jobDir string, logger *lib.Logger)
 	partFiles, _ := filepath.Glob(filepath.Join(outputDir, "*.part"))
 	for _, partFile := range partFiles {
 		logger.Debug("Removing stale partial file from previous run", "file", filepath.Base(partFile))
-		os.Remove(partFile)
+		_ = os.Remove(partFile)
 	}
 
 	// Process each file
@@ -159,7 +159,7 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 	if err != nil {
 		return 0, fmt.Errorf("failed to open input file: %w", err)
 	}
-	defer inFile.Close()
+	defer func() { _ = inFile.Close() }()
 
 	// Create temporary output file with .part extension
 	tempOutputFile := outputFile + ".part"
@@ -167,13 +167,13 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 	if err != nil {
 		return 0, fmt.Errorf("failed to create temporary output file: %w", err)
 	}
-	defer outFile.Close()
+	defer func() { _ = outFile.Close() }()
 
 	// Clean up .part file on any error (will be overridden if rename succeeds)
 	var success bool
 	defer func() {
 		if !success {
-			os.Remove(tempOutputFile)
+			_ = os.Remove(tempOutputFile)
 		}
 	}()
 
@@ -292,7 +292,7 @@ func countResourcesInFile(filename string) int {
 	if err != nil {
 		return 0
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	count := 0
 	scanner := bufio.NewScanner(file)

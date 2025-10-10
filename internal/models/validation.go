@@ -228,8 +228,8 @@ func ValidateJobsDir(path string) error {
 	if err != nil {
 		return fmt.Errorf("jobs directory is not writable: %w", err)
 	}
-	f.Close()
-	os.Remove(testFile)
+	_ = f.Close()
+	_ = os.Remove(testFile)
 
 	return nil
 }
@@ -283,7 +283,7 @@ func (c *ProjectConfig) ValidateServiceConnectivity() error {
 		if err != nil {
 			return fmt.Errorf("%s service unreachable at %s: %w", serviceName, checkURL, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		// Any response (even 404) means the host is reachable
 		// We're just checking connectivity, not full service health
