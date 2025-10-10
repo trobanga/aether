@@ -72,7 +72,7 @@
 
 **NOTE: These validation tasks ensure the lint job works correctly by intentionally breaking it**
 
-- [ ] **T006** [US1] Create validation test plan for lint job
+- [X] **T006** [US1] Create validation test plan for lint job
   - Document in `specs/003-implement-ci-pipeline/validation-notes.md`:
     - Test 1: Introduce linting violation (e.g., unused variable)
     - Test 2: Verify failure with clear error message
@@ -81,15 +81,15 @@
 
 ### Implementation for User Story 1
 
-- [ ] **T007** [US1] Implement lint job in `.github/workflows/ci.yml`
+- [X] **T007** [US1] Implement lint job in `.github/workflows/ci.yml`
   - Set `timeout-minutes: 5` (FR-013)
-  - Add checkout step: `actions/checkout@v5`
-  - Add Go setup: `actions/setup-go@v6` with go-version '1.25', cache: true (FR-015, FR-016)
-  - Add golangci-lint step: `golangci/golangci-lint-action@v8` with version v2.1
+  - Add checkout step: `actions/checkout@v4`
+  - Add Go setup: `actions/setup-go@v5` with go-version '1.25', cache: true (FR-015, FR-016)
+  - Add golangci-lint step: `golangci/golangci-lint-action@v6` with version v1.61
   - Add artifact upload for lint results (retention-days: 30) (FR-012)
   - Reference: quickstart.md Step 3, research.md section 1
 
-- [ ] **T008** [US1] Commit and push lint job implementation
+- [X] **T008** [US1] Commit and push lint job implementation
   - Run: `git add .github/workflows/ci.yml && git commit -m "feat: implement lint job in CI pipeline" && git push`
   - Verify lint job runs successfully on clean code
 
@@ -118,7 +118,7 @@
 
 ### Validation for User Story 2
 
-- [ ] **T011** [US2] Create validation test plan for unit-test job
+- [X] **T011** [US2] Create validation test plan for unit-test job
   - Document validation scenarios:
     - Test 1: Introduce failing unit test
     - Test 2: Verify pipeline fails with test failure details
@@ -127,10 +127,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] **T012** [US2] Implement unit-test job in `.github/workflows/ci.yml`
+- [X] **T012** [US2] Implement unit-test job in `.github/workflows/ci.yml`
   - Set `needs: [lint]` dependency
   - Set `timeout-minutes: 10` (FR-013)
-  - Add checkout step: `actions/checkout@v5`
+  - Add checkout step: `actions/checkout@v4`
   - Add Go setup with caching (same as lint job)
   - Add step to run `make test-unit` (FR-004)
   - Add step to generate coverage: `make coverage`
@@ -138,7 +138,7 @@
   - Use `if: always()` for artifact upload to capture results even on failure
   - Reference: quickstart.md Step 4
 
-- [ ] **T013** [US2] Commit and push unit-test job implementation
+- [X] **T013** [US2] Commit and push unit-test job implementation
   - Run: `git add .github/workflows/ci.yml && git commit -m "feat: implement unit-test job in CI pipeline" && git push`
   - Verify unit-test job runs after lint passes
 
