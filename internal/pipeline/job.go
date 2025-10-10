@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/trobanga/aether/internal/lib"
 	"github.com/trobanga/aether/internal/models"
 	"github.com/trobanga/aether/internal/services"
 )
@@ -124,6 +125,14 @@ func AdvanceToNextStep(job *models.PipelineJob) (*models.PipelineJob, error) {
 	if nextStepName == "" {
 		// No more steps - job is complete
 		return CompleteJob(job), nil
+	}
+
+	// Validate prerequisites before advancing
+	// Note: This is a safety check. Normal execution should already ensure prerequisites.
+	// This catches cases where user manually tries to run a step out of order.
+	canRun, prerequisite := lib.CanRunStep(*job, nextStepName)
+	if !canRun {
+		return nil, lib.ErrStepPrerequisiteNotMet(nextStepName, prerequisite)
 	}
 
 	// Update current step

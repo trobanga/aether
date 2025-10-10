@@ -187,11 +187,11 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T078 [P] Add comprehensive error messages and user guidance for all failure scenarios in `internal/lib/errors.go`
+- [X] T078 [P] Add comprehensive error messages and user guidance for all failure scenarios in `internal/lib/errors.go`
 - [ ] T079 [P] Implement `job run --step` command for manual step execution in `internal/cli/job_run.go`
-- [ ] T080 [P] Add prerequisite step validation (prevent running DIMP before import) in pipeline orchestrator
+- [X] T080 [P] Add prerequisite step validation (prevent running DIMP before import) in pipeline orchestrator
 - [ ] T081 [P] Implement concurrent job safety (prevent two processes modifying same job) using file locks in `internal/services/locks.go`
-- [ ] T082 [P] Verify progress indicator compliance with FR-029 across all pipeline steps (percentage, ETA, throughput, 2s updates)
+- [X] T082 [P] Verify progress indicator compliance with FR-029 across all pipeline steps (percentage, ETA, throughput, 2s updates)
 - [X] T083 [P] Add metrics collection (job duration, file counts, data volumes) in job state (TotalFiles, TotalBytes tracked in PipelineJob)
 - [X] T084 [P] Create Makefile with targets (build-linux, build-mac, test, install) per research.md
 - [X] T085 [P] Update quickstart.md with actual command examples and installation instructions
@@ -351,7 +351,7 @@ With multiple developers:
 - **Phase 4 - User Story 2 (Resumption)**: 12 tasks ✅ COMPLETE (4 tests + 8 implementation)
 - **Phase 5 - User Story 3 (DIMP)**: 11 tasks ✅ COMPLETE (4 tests + 7 implementation)
 - **Phase 6 - User Story 4 (Conversion)**: 15 tasks ❌ NOT STARTED (6 tests + 9 implementation, updated for progress displays)
-- **Phase 7 - Polish**: 15 tasks (4/15 complete) - updated T082 and added T090 for FR-029 validation
+- **Phase 7 - Polish**: 15 tasks (7/15 complete) - T078, T080, T082-086, T092 complete
 
 **Test Tasks**: 21 (per TDD requirement) - added 2 UI component tests
 **Parallel Tasks**: 47 marked with [P] - increased due to UI infrastructure
