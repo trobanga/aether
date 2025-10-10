@@ -173,7 +173,7 @@
 
 ### Validation for User Story 3
 
-- [ ] **T017** [US3] Create validation test plan for integration-test job
+- [X] **T017** [US3] Create validation test plan for integration-test job
   - Document validation scenarios:
     - Test 1: Verify Docker services start and health checks pass
     - Test 2: Introduce failing integration test, verify logs captured
@@ -182,31 +182,31 @@
 
 ### Implementation for User Story 3
 
-- [ ] **T018** [US3] Implement integration-test job - service startup in `.github/workflows/ci.yml`
+- [X] **T018** [US3] Implement integration-test job - service startup in `.github/workflows/ci.yml`
   - Set `needs: [unit-test]` dependency
   - Set `timeout-minutes: 20` (FR-013)
   - Add checkout and Go setup steps (same pattern as previous jobs)
   - Add step to start Docker services: `docker compose -f .github/test/docker-compose.yaml up -d` (FR-006)
   - Reference: quickstart.md Step 5
 
-- [ ] **T019** [US3] Implement health check wait logic
+- [X] **T019** [US3] Implement health check wait logic
   - Add step with timeout 60s to poll for healthy services (FR-007)
   - Script: `timeout 60 bash -c 'until docker compose ps | grep -q "healthy"; do sleep 2; done'`
   - On timeout: Capture docker ps and logs, then exit with code 2 (FR-019)
   - Reference: quickstart.md Step 5, research.md section 3
 
-- [ ] **T020** [US3] Implement test execution and log capture
+- [X] **T020** [US3] Implement test execution and log capture
   - Add step to run `make test-integration` (FR-005)
   - Add step with `if: failure()` to capture Docker logs: `docker compose logs > docker-logs-integration.txt` (FR-020)
   - Add artifact upload for test results (if: always())
   - Add artifact upload for Docker logs (if: failure(), retention-days: 7)
 
-- [ ] **T021** [US3] Implement cleanup with always-run guarantee
+- [X] **T021** [US3] Implement cleanup with always-run guarantee
   - Add cleanup step: `docker compose -f .github/test/docker-compose.yaml down -v` (FR-009)
   - Set `if: always()` to ensure cleanup runs regardless of test outcome
   - Reference: workflow-contract.md "Resource Cleanup Guarantee"
 
-- [ ] **T022** [US3] Commit and push integration-test job implementation
+- [X] **T022** [US3] Commit and push integration-test job implementation
   - Run: `git add .github/workflows/ci.yml && git commit -m "feat: implement integration-test job with Docker orchestration" && git push`
   - Verify integration-test job runs after unit-test passes
 
