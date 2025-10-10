@@ -6,6 +6,8 @@ Auto-generated from all feature plans. Last updated: 2025-10-08
 - Go 1.21+ + Cobra (CLI framework), net/http (HTTP client), encoding/json (FHIR NDJSON parsing), gopkg.in/yaml.v3 (config), testify (testing assertions) (001-dup-pipeline-we)
 - Go 1.21+ + Cobra (CLI framework), net/http (HTTP client), encoding/json (FHIR NDJSON parsing), gopkg.in/yaml.v3 (config), testify (testing assertions), progress bar library (schollz/progressbar or cheggaaa/pb for FR-029 requirements) (001-dup-pipeline-we)
 - Filesystem (job state as JSON, FHIR NDJSON files organized by job ID) (001-dup-pipeline-we)
+- Go 1.25.1 (minimum Go 1.21 as per project requirements) (003-implement-ci-pipeline)
+- N/A (CI pipeline configuration only) (003-implement-ci-pipeline)
 
 ## Project Structure
 ```
@@ -20,6 +22,7 @@ tests/
 Go 1.21+: Follow standard conventions
 
 ## Recent Changes
+- 003-implement-ci-pipeline: Added Go 1.25.1 (minimum Go 1.21 as per project requirements)
 - 001-dup-pipeline-we: Added Go 1.21+ + Cobra (CLI framework), net/http (HTTP client), encoding/json (FHIR NDJSON parsing), gopkg.in/yaml.v3 (config), testify (testing assertions), progress bar library (schollz/progressbar or cheggaaa/pb for FR-029 requirements)
 - 001-dup-pipeline-we: Added Go 1.21+ + Cobra (CLI framework), net/http (HTTP client), encoding/json (FHIR NDJSON parsing), gopkg.in/yaml.v3 (config), testify (testing assertions)
 

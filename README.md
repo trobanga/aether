@@ -294,11 +294,10 @@ Aether follows three core principles defined in the [project constitution](.spec
 - **Functional Programming Compliance**: Immutable data structures with pure functions
 
 ### Planned 📋
-- **Format Conversion**: CSV and Parquet output (requires external conversion services)
-- **Enhanced Validation**: FHIR schema validation step
-- **Additional Output Formats**: Support for more medical data formats
+- **Format Conversion**: CSV and Parquet output (requires external services)
+- **Enhanced Validation**: FHIR schema validation step (requires external service)
 
-See [tasks.md](specs/001-dup-pipeline-we/tasks.md) for detailed implementation tracking.
+See `specs/*/tasks.md` for detailed implementation tracking.
 
 ## Contributing
 
