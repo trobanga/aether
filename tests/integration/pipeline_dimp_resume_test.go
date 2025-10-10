@@ -10,7 +10,6 @@ import (
 	"github.com/trobanga/aether/internal/lib"
 	"github.com/trobanga/aether/internal/models"
 	"github.com/trobanga/aether/internal/pipeline"
-	"github.com/trobanga/aether/internal/services"
 )
 
 // TestDIMPResumeAfterInterrupt tests that DIMP can resume after being interrupted mid-processing
@@ -24,7 +23,7 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 	// Create test config
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
-		Services: models.ServicesConfig{
+		Services: models.ServiceConfig{
 			DIMPUrl: "http://localhost:32861/fhir", // Assume DIMP service is running
 		},
 		Pipeline: models.PipelineConfig{
@@ -38,7 +37,7 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 	}
 
 	// Create a job
-	job, err := pipeline.CreateJobWithConfig("test-input", config)
+	job, err := pipeline.CreateJob("test-input", config)
 	require.NoError(t, err)
 
 	// Manually set up import directory with test files

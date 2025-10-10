@@ -192,16 +192,16 @@
 - [ ] T080 [P] Add prerequisite step validation (prevent running DIMP before import) in pipeline orchestrator
 - [ ] T081 [P] Implement concurrent job safety (prevent two processes modifying same job) using file locks in `internal/services/locks.go`
 - [ ] T082 [P] Verify progress indicator compliance with FR-029 across all pipeline steps (percentage, ETA, throughput, 2s updates)
-- [ ] T083 [P] Add metrics collection (job duration, file counts, data volumes) in job state
-- [ ] T084 [P] Create Makefile with targets (build-linux, build-mac, test, install) per research.md
-- [ ] T085 [P] Update quickstart.md with actual command examples and installation instructions
-- [ ] T086 [P] Add command help text and examples for all CLI commands
+- [X] T083 [P] Add metrics collection (job duration, file counts, data volumes) in job state (TotalFiles, TotalBytes tracked in PipelineJob)
+- [X] T084 [P] Create Makefile with targets (build-linux, build-mac, test, install) per research.md
+- [X] T085 [P] Update quickstart.md with actual command examples and installation instructions
+- [X] T086 [P] Add command help text and examples for all CLI commands
 - [ ] T087 Code review and refactoring for functional programming compliance (immutability, pure functions)
 - [ ] T088 Performance testing with 10GB+ FHIR datasets per success criteria SC-004
 - [ ] T089 Validate status query performance <2s per success criteria SC-003
 - [ ] T090 Validate progress indicator update frequency meets FR-029d requirement (minimum 2s updates)
 - [ ] T091 Run full quickstart.md validation with test services
-- [ ] T092 [P] Create README.md with project overview, installation, and quick start
+- [X] T092 [P] Create README.md with project overview, installation, and quick start
 
 ---
 
@@ -345,13 +345,13 @@ With multiple developers:
 ## Task Summary
 
 **Total Tasks**: 92 (was 86, added 6 for FR-029 progress indicator requirements)
-- **Phase 1 - Setup**: 6 tasks
-- **Phase 2 - Foundational**: 16 tasks (BLOCKING) - added 3 UI infrastructure tasks (T020-T022)
-- **Phase 3 - User Story 1 (Import)**: 17 tasks (7 tests + 10 implementation) - added 2 UI tests + 3 progress integration tasks
-- **Phase 4 - User Story 2 (Resumption)**: 12 tasks (4 tests + 8 implementation)
-- **Phase 5 - User Story 3 (DIMP)**: 11 tasks (4 tests + 7 implementation)
-- **Phase 6 - User Story 4 (Conversion)**: 15 tasks (6 tests + 9 implementation) - updated for progress displays
-- **Phase 7 - Polish**: 15 tasks - updated T082 and added T090 for FR-029 validation
+- **Phase 1 - Setup**: 6 tasks ✅ COMPLETE
+- **Phase 2 - Foundational**: 16 tasks ✅ COMPLETE (added 3 UI infrastructure tasks T020-T022)
+- **Phase 3 - User Story 1 (Import)**: 17 tasks ✅ COMPLETE (7 tests + 10 implementation, added 2 UI tests + 3 progress integration tasks)
+- **Phase 4 - User Story 2 (Resumption)**: 12 tasks ✅ COMPLETE (4 tests + 8 implementation)
+- **Phase 5 - User Story 3 (DIMP)**: 11 tasks ✅ COMPLETE (4 tests + 7 implementation)
+- **Phase 6 - User Story 4 (Conversion)**: 15 tasks ❌ NOT STARTED (6 tests + 9 implementation, updated for progress displays)
+- **Phase 7 - Polish**: 15 tasks (4/15 complete) - updated T082 and added T090 for FR-029 validation
 
 **Test Tasks**: 21 (per TDD requirement) - added 2 UI component tests
 **Parallel Tasks**: 47 marked with [P] - increased due to UI infrastructure
