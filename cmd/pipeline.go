@@ -222,7 +222,15 @@ func runPipelineStart(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Type: %s\n", job.InputType)
 	fmt.Printf("\n")
 
-	// Start the job
+	// Acquire job lock to prevent concurrent execution
+	// Lock is automatically released when function returns (via defer)
+	lock, err := services.AcquireJobLock(config.JobsDir, job.JobID, logger)
+	if err != nil {
+		return fmt.Errorf("cannot start pipeline: %w\n\nAnother process may be working on this job.", err)
+	}
+	defer lock.Release()
+
+	// Start the job (with lock held)
 	startedJob := pipeline.StartJob(job)
 
 	// Save updated state
@@ -372,6 +380,13 @@ func runPipelineContinue(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Current status: %s\n", job.Status)
 	fmt.Printf("Current step: %s\n", job.CurrentStep)
+
+	// Acquire job lock to prevent concurrent execution
+	lock, err := services.AcquireJobLock(config.JobsDir, jobID, logger)
+	if err != nil {
+		return fmt.Errorf("cannot continue pipeline: %w\n\nAnother process may be working on this job. Wait for it to complete or check job status.", err)
+	}
+	defer lock.Release()
 
 	// Get current step and check if it's completed
 	currentStepName := models.StepName(job.CurrentStep)

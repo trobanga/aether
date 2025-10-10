@@ -1,9 +1,11 @@
 package integration
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +17,17 @@ import (
 // TestDIMPResumeAfterInterrupt tests that DIMP can resume after being interrupted mid-processing
 // Reproduces bug: when DIMP is interrupted, it re-processes all files instead of skipping completed ones
 func TestDIMPResumeAfterInterrupt(t *testing.T) {
+	// Check if DIMP service is available
+	dimpURL := "http://localhost:32861/fhir"
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(dimpURL)
+	if err != nil || (resp != nil && resp.StatusCode >= 500) {
+		t.Skip("Skipping test: DIMP service not available at localhost:32861. Run docker-compose up dimp-service to enable this test.")
+	}
+	if resp != nil {
+		resp.Body.Close()
+	}
+
 	// Setup
 	tempDir := t.TempDir()
 	jobsDir := filepath.Join(tempDir, "jobs")

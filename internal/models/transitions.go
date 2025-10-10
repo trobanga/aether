@@ -4,7 +4,13 @@ import "time"
 
 // UpdateJobStatus creates a new PipelineJob with updated status
 // Pure function - returns new instance, does not mutate original
+// Deep copies slice fields to ensure full immutability
 func UpdateJobStatus(job PipelineJob, status JobStatus) PipelineJob {
+	// Deep copy steps slice to prevent shared references
+	newSteps := make([]PipelineStep, len(job.Steps))
+	copy(newSteps, job.Steps)
+
+	job.Steps = newSteps
 	job.Status = status
 	job.UpdatedAt = time.Now()
 	return job
@@ -12,7 +18,13 @@ func UpdateJobStatus(job PipelineJob, status JobStatus) PipelineJob {
 
 // UpdateCurrentStep creates a new PipelineJob with updated current step
 // Pure function - returns new instance
+// Deep copies slice fields to ensure full immutability
 func UpdateCurrentStep(job PipelineJob, step StepName) PipelineJob {
+	// Deep copy steps slice to prevent shared references
+	newSteps := make([]PipelineStep, len(job.Steps))
+	copy(newSteps, job.Steps)
+
+	job.Steps = newSteps
 	job.CurrentStep = string(step)
 	job.UpdatedAt = time.Now()
 	return job
@@ -20,7 +32,13 @@ func UpdateCurrentStep(job PipelineJob, step StepName) PipelineJob {
 
 // AddError creates a new PipelineJob with error message
 // Pure function - returns new instance
+// Deep copies slice fields to ensure full immutability
 func AddError(job PipelineJob, errorMsg string) PipelineJob {
+	// Deep copy steps slice to prevent shared references
+	newSteps := make([]PipelineStep, len(job.Steps))
+	copy(newSteps, job.Steps)
+
+	job.Steps = newSteps
 	job.ErrorMessage = errorMsg
 	job.Status = JobStatusFailed
 	job.UpdatedAt = time.Now()
@@ -29,7 +47,13 @@ func AddError(job PipelineJob, errorMsg string) PipelineJob {
 
 // UpdateJobMetrics creates a new PipelineJob with updated file/byte counts
 // Pure function - returns new instance
+// Deep copies slice fields to ensure full immutability
 func UpdateJobMetrics(job PipelineJob, files int, bytes int64) PipelineJob {
+	// Deep copy steps slice to prevent shared references
+	newSteps := make([]PipelineStep, len(job.Steps))
+	copy(newSteps, job.Steps)
+
+	job.Steps = newSteps
 	job.TotalFiles = files
 	job.TotalBytes = bytes
 	job.UpdatedAt = time.Now()
