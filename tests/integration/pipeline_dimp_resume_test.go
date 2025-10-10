@@ -49,8 +49,9 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 		},
 	}
 
+	logger := lib.NewLogger(lib.LogLevelDebug)
 	// Create a job
-	job, err := pipeline.CreateJob("test-input", config)
+	job, err := pipeline.CreateJob("test-input", config, logger)
 	require.NoError(t, err)
 
 	// Manually set up import directory with test files
@@ -78,9 +79,6 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 	advancedJob, err := pipeline.AdvanceToNextStep(job)
 	require.NoError(t, err)
 	require.NoError(t, pipeline.UpdateJob(jobsDir, advancedJob))
-
-	// Create logger
-	logger := lib.NewLogger(lib.LogLevelDebug)
 
 	// Create output directory (simulating partial processing)
 	outputDir := filepath.Join(jobsDir, job.JobID, "pseudonymized")

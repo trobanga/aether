@@ -212,7 +212,7 @@ func runPipelineStart(cmd *cobra.Command, args []string) error {
 
 	// Create job
 	logger.Info("Creating new pipeline job", "input", inputSource)
-	job, err := pipeline.CreateJob(inputSource, *config)
+	job, err := pipeline.CreateJob(inputSource, *config, logger)
 	if err != nil {
 		return fmt.Errorf("failed to create job: %w", err)
 	}

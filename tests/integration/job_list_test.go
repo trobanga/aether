@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/trobanga/aether/internal/lib"
 	"github.com/trobanga/aether/internal/models"
 	"github.com/trobanga/aether/internal/pipeline"
 	"github.com/trobanga/aether/internal/services"
@@ -223,7 +224,8 @@ func createTestJobWithState(t *testing.T, jobsDir string, status models.JobStatu
 	sourceDir := t.TempDir()
 	createTestFHIRFile(t, sourceDir)
 
-	job, err := pipeline.CreateJob(sourceDir, config)
+	logger := lib.NewLogger(lib.LogLevelInfo)
+	job, err := pipeline.CreateJob(sourceDir, config, logger)
 	require.NoError(t, err)
 
 	// Update job to desired state

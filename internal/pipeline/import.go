@@ -45,6 +45,14 @@ func ExecuteImportStep(job *models.PipelineJob, logger *lib.Logger, httpClient *
 			importedFiles, err = services.DownloadFromURL(job.InputSource, importDir, httpClient, logger, false)
 		}
 
+	case models.InputTypeCRTDL:
+		logger.Info("Extracting data from TORCH using CRTDL", "source", job.InputSource)
+		importedFiles, err = executeTORCHExtraction(job, importDir, httpClient, logger, showProgress)
+
+	case models.InputTypeTORCHURL:
+		logger.Info("Downloading from TORCH result URL", "source", job.InputSource)
+		importedFiles, err = executeTORCHDownload(job, importDir, httpClient, logger, showProgress)
+
 	default:
 		err = fmt.Errorf("unsupported input type: %s", job.InputType)
 	}
@@ -93,14 +101,81 @@ func failImportStep(job *models.PipelineJob, err error, errorType models.ErrorTy
 	return updatedJob
 }
 
+// executeTORCHExtraction performs CRTDL-based data extraction from TORCH server
+// Submits CRTDL, polls for completion, and downloads resulting NDJSON files
+func executeTORCHExtraction(job *models.PipelineJob, importDir string, httpClient *services.HTTPClient, logger *lib.Logger, showProgress bool) ([]models.FHIRDataFile, error) {
+	// Create TORCH client
+	torchClient := services.NewTORCHClient(job.Config.Services.TORCH, httpClient, logger)
+
+	// Submit extraction
+	extractionURL, err := torchClient.SubmitExtraction(job.InputSource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit TORCH extraction: %w", err)
+	}
+
+	// Store extraction URL in job for resumption capability
+	job.TORCHExtractionURL = extractionURL
+	logger.Info("TORCH extraction URL stored for resumption", "url", extractionURL)
+
+	// Poll extraction status until complete
+	fileURLs, err := torchClient.PollExtractionStatus(extractionURL, showProgress)
+	if err != nil {
+		return nil, fmt.Errorf("TORCH extraction failed: %w", err)
+	}
+
+	if len(fileURLs) == 0 {
+		logger.Warn("TORCH extraction returned no files (empty cohort)")
+		return []models.FHIRDataFile{}, nil
+	}
+
+	// Download extraction files
+	files, err := torchClient.DownloadExtractionFiles(fileURLs, importDir, showProgress)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download TORCH files: %w", err)
+	}
+
+	return files, nil
+}
+
+// executeTORCHDownload downloads files from a direct TORCH result URL
+// This bypasses extraction submission and directly downloads from an existing result
+func executeTORCHDownload(job *models.PipelineJob, importDir string, httpClient *services.HTTPClient, logger *lib.Logger, showProgress bool) ([]models.FHIRDataFile, error) {
+	// Create TORCH client
+	torchClient := services.NewTORCHClient(job.Config.Services.TORCH, httpClient, logger)
+
+	// Poll the URL directly (it should return 200 immediately if extraction is complete)
+	fileURLs, err := torchClient.PollExtractionStatus(job.InputSource, showProgress)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TORCH result: %w", err)
+	}
+
+	if len(fileURLs) == 0 {
+		logger.Warn("TORCH result URL returned no files")
+		return []models.FHIRDataFile{}, nil
+	}
+
+	// Download files
+	files, err := torchClient.DownloadExtractionFiles(fileURLs, importDir, showProgress)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download TORCH files: %w", err)
+	}
+
+	return files, nil
+}
+
 // classifyImportError determines if an import error is transient or non-transient
 func classifyImportError(err error, inputType models.InputType) models.ErrorType {
 	if err == nil {
 		return models.ErrorTypeNonTransient
 	}
 
-	// For HTTP downloads, network errors are transient
-	if inputType == models.InputTypeHTTP {
+	// Check for TORCH-specific errors
+	if torchErr, ok := err.(*services.TORCHError); ok {
+		return torchErr.ErrorType
+	}
+
+	// For HTTP downloads and TORCH operations, network errors are transient
+	if inputType == models.InputTypeHTTP || inputType == models.InputTypeCRTDL || inputType == models.InputTypeTORCHURL {
 		if lib.IsNetworkError(err) {
 			return models.ErrorTypeTransient
 		}

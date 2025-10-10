@@ -41,7 +41,7 @@ func TestPipelineImportError_UnreachableURL(t *testing.T) {
 	httpClient := services.NewHTTPClient(2*time.Second, config.Retry, logger)
 
 	// Create job with unreachable URL
-	job, err := pipeline.CreateJob(unreachableURL, config)
+	job, err := pipeline.CreateJob(unreachableURL, config, logger)
 	require.NoError(t, err, "Job creation should succeed")
 	assert.Equal(t, models.InputTypeHTTP, job.InputType, "Input type should be HTTP")
 
@@ -108,7 +108,7 @@ func TestPipelineImportError_HTTP404(t *testing.T) {
 	httpClient := services.DefaultHTTPClient()
 
 	// Execute import
-	job, _ := pipeline.CreateJob(server.URL+"/missing.ndjson", config)
+	job, _ := pipeline.CreateJob(server.URL+"/missing.ndjson", config, logger)
 	startedJob := pipeline.StartJob(job)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 
@@ -159,7 +159,7 @@ func TestPipelineImportError_HTTP500WithRetry(t *testing.T) {
 	httpClient := services.NewHTTPClient(2*time.Second, config.Retry, logger)
 
 	// Execute import
-	job, _ := pipeline.CreateJob(server.URL+"/error.ndjson", config)
+	job, _ := pipeline.CreateJob(server.URL+"/error.ndjson", config, logger)
 	startedJob := pipeline.StartJob(job)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 
@@ -201,7 +201,7 @@ func TestPipelineImportError_InvalidLocalPath(t *testing.T) {
 	httpClient := services.DefaultHTTPClient()
 
 	// Create job with invalid path
-	job, err := pipeline.CreateJob(invalidPath, config)
+	job, err := pipeline.CreateJob(invalidPath, config, logger)
 	require.NoError(t, err, "Job creation should succeed")
 	assert.Equal(t, models.InputTypeLocal, job.InputType, "Input type should be local")
 
@@ -246,7 +246,7 @@ func TestPipelineImportError_EmptyDirectory(t *testing.T) {
 	httpClient := services.DefaultHTTPClient()
 
 	// Execute import
-	job, _ := pipeline.CreateJob(emptyDir, config)
+	job, _ := pipeline.CreateJob(emptyDir, config, logger)
 	startedJob := pipeline.StartJob(job)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 
@@ -285,7 +285,7 @@ func TestPipelineImportError_PathIsFile(t *testing.T) {
 	httpClient := services.DefaultHTTPClient()
 
 	// Execute import
-	job, _ := pipeline.CreateJob(filePath, config)
+	job, _ := pipeline.CreateJob(filePath, config, logger)
 	startedJob := pipeline.StartJob(job)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 
@@ -329,7 +329,7 @@ func TestPipelineImportError_NetworkTimeout(t *testing.T) {
 	httpClient := services.NewHTTPClient(1*time.Second, config.Retry, logger)
 
 	// Execute import
-	job, _ := pipeline.CreateJob(server.URL+"/slow.ndjson", config)
+	job, _ := pipeline.CreateJob(server.URL+"/slow.ndjson", config, logger)
 	startedJob := pipeline.StartJob(job)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 
@@ -372,7 +372,7 @@ func TestPipelineImportError_StatePersistence(t *testing.T) {
 	httpClient := services.DefaultHTTPClient()
 
 	// Execute import
-	job, _ := pipeline.CreateJob(server.URL+"/bad.ndjson", config)
+	job, _ := pipeline.CreateJob(server.URL+"/bad.ndjson", config, logger)
 	startedJob := pipeline.StartJob(job)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 
@@ -430,7 +430,7 @@ func TestPipelineImportError_PartialDownloadCleanup(t *testing.T) {
 
 	// Note: This test would ideally simulate connection drop, but for now
 	// we test the cleanup mechanism with a different error scenario
-	job, _ := pipeline.CreateJob("http://localhost:99999/unreachable.ndjson", config)
+	job, _ := pipeline.CreateJob("http://localhost:99999/unreachable.ndjson", config, logger)
 	startedJob := pipeline.StartJob(job)
 	_, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 

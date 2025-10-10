@@ -1,5 +1,10 @@
 package models
 
+import (
+	"fmt"
+	"net/url"
+)
+
 // ProjectConfig is the top-level configuration for the Aether pipeline
 type ProjectConfig struct {
 	Services ServiceConfig  `yaml:"services" json:"services"`
@@ -10,9 +15,20 @@ type ProjectConfig struct {
 
 // ServiceConfig contains connection details for external HTTP services
 type ServiceConfig struct {
-	DIMPUrl              string `yaml:"dimp_url" json:"dimp_url"`
-	CSVConversionUrl     string `yaml:"csv_conversion_url" json:"csv_conversion_url"`
-	ParquetConversionUrl string `yaml:"parquet_conversion_url" json:"parquet_conversion_url"`
+	DIMPUrl              string      `yaml:"dimp_url" json:"dimp_url"`
+	CSVConversionUrl     string      `yaml:"csv_conversion_url" json:"csv_conversion_url"`
+	ParquetConversionUrl string      `yaml:"parquet_conversion_url" json:"parquet_conversion_url"`
+	TORCH                TORCHConfig `yaml:"torch" json:"torch"`
+}
+
+// TORCHConfig contains TORCH server connection and extraction behavior settings
+type TORCHConfig struct {
+	BaseURL                   string `yaml:"base_url" json:"base_url"`
+	Username                  string `yaml:"username" json:"username"`
+	Password                  string `yaml:"password" json:"password"`
+	ExtractionTimeoutMinutes  int    `yaml:"extraction_timeout_minutes" json:"extraction_timeout_minutes"`
+	PollingIntervalSeconds    int    `yaml:"polling_interval_seconds" json:"polling_interval_seconds"`
+	MaxPollingIntervalSeconds int    `yaml:"max_polling_interval_seconds" json:"max_polling_interval_seconds"`
 }
 
 // PipelineConfig defines which steps are enabled and their execution order
@@ -34,6 +50,14 @@ func DefaultConfig() ProjectConfig {
 			DIMPUrl:              "",
 			CSVConversionUrl:     "",
 			ParquetConversionUrl: "",
+			TORCH: TORCHConfig{
+				BaseURL:                   "",
+				Username:                  "",
+				Password:                  "",
+				ExtractionTimeoutMinutes:  30,
+				PollingIntervalSeconds:    5,
+				MaxPollingIntervalSeconds: 30,
+			},
 		},
 		Pipeline: PipelineConfig{
 			EnabledSteps: []StepName{StepImport},
@@ -45,6 +69,40 @@ func DefaultConfig() ProjectConfig {
 		},
 		JobsDir: "./jobs",
 	}
+}
+
+// Validate checks if the TORCHConfig has all required fields and valid values
+func (c *TORCHConfig) Validate() error {
+	if c.BaseURL == "" {
+		return fmt.Errorf("TORCH base_url is required")
+	}
+
+	if _, err := url.Parse(c.BaseURL); err != nil {
+		return fmt.Errorf("invalid TORCH base_url: %w", err)
+	}
+
+	if c.Username == "" {
+		return fmt.Errorf("TORCH username is required")
+	}
+
+	if c.Password == "" {
+		return fmt.Errorf("TORCH password is required")
+	}
+
+	if c.ExtractionTimeoutMinutes <= 0 {
+		return fmt.Errorf("extraction_timeout_minutes must be > 0, got %d", c.ExtractionTimeoutMinutes)
+	}
+
+	if c.PollingIntervalSeconds <= 0 || c.PollingIntervalSeconds > 60 {
+		return fmt.Errorf("polling_interval_seconds must be 1-60, got %d", c.PollingIntervalSeconds)
+	}
+
+	if c.MaxPollingIntervalSeconds < c.PollingIntervalSeconds {
+		return fmt.Errorf("max_polling_interval_seconds (%d) must be >= polling_interval_seconds (%d)",
+			c.MaxPollingIntervalSeconds, c.PollingIntervalSeconds)
+	}
+
+	return nil
 }
 
 // IsStepEnabled checks if a specific step is enabled in the pipeline configuration
