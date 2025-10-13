@@ -137,9 +137,9 @@ func TestImportFromLocalDirectory_RecursiveScan(t *testing.T) {
 
 	// Create NDJSON files in different locations
 	testFiles := map[string]string{
-		"Patient.ndjson":               `{"resourceType":"Patient"}`,
-		"subdir1/Observation.ndjson":   `{"resourceType":"Observation"}`,
-		"subdir2/Encounter.ndjson":     `{"resourceType":"Encounter"}`,
+		"Patient.ndjson":             `{"resourceType":"Patient"}`,
+		"subdir1/Observation.ndjson": `{"resourceType":"Observation"}`,
+		"subdir2/Encounter.ndjson":   `{"resourceType":"Encounter"}`,
 	}
 
 	for relPath, content := range testFiles {

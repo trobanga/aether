@@ -9,11 +9,11 @@ import (
 // FHIRDataFile represents a single FHIR NDJSON file in the pipeline
 type FHIRDataFile struct {
 	FileName     string    `json:"file_name"`
-	FilePath     string    `json:"file_path"`      // Relative to job directory
-	ResourceType string    `json:"resource_type"`  // e.g., "Patient", "Observation"
-	FileSize     int64     `json:"file_size"`      // Bytes
-	SourceStep   StepName  `json:"source_step"`    // Which step produced this file
-	LineCount    int       `json:"line_count"`     // Number of FHIR resources
+	FilePath     string    `json:"file_path"`     // Relative to job directory
+	ResourceType string    `json:"resource_type"` // e.g., "Patient", "Observation"
+	FileSize     int64     `json:"file_size"`     // Bytes
+	SourceStep   StepName  `json:"source_step"`   // Which step produced this file
+	LineCount    int       `json:"line_count"`    // Number of FHIR resources
 	CreatedAt    time.Time `json:"created_at"`
 }
 

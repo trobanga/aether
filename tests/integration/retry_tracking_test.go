@@ -144,11 +144,11 @@ func TestRetryTracking_MultipleRetries(t *testing.T) {
 // TestRetryTracking_ShouldRetryLogic tests the retry decision logic
 func TestRetryTracking_ShouldRetryLogic(t *testing.T) {
 	tests := []struct {
-		name           string
-		errorType      models.ErrorType
-		retryCount     int
-		maxAttempts    int
-		expectedRetry  bool
+		name          string
+		errorType     models.ErrorType
+		retryCount    int
+		maxAttempts   int
+		expectedRetry bool
 	}{
 		{
 			name:          "Transient error, retry 0, max 5",

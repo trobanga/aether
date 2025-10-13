@@ -128,7 +128,7 @@ func TestPipelineImportURL_WithRetry(t *testing.T) {
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
-			InitialBackoffMs: 10,  // Short backoff for fast test
+			InitialBackoffMs: 10, // Short backoff for fast test
 			MaxBackoffMs:     100,
 		},
 	}

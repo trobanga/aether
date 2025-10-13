@@ -81,5 +81,3 @@ func init() {
 	// Add version template
 	rootCmd.SetVersionTemplate("Aether version {{.Version}}\n")
 }
-
-

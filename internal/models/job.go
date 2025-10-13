@@ -4,18 +4,18 @@ import "time"
 
 // PipelineJob represents a single execution of the Data Use Process pipeline
 type PipelineJob struct {
-	JobID        string        `json:"job_id"`
-	CreatedAt    time.Time     `json:"created_at"`
-	UpdatedAt    time.Time     `json:"updated_at"`
-	InputSource  string        `json:"input_source"`   // Local path or HTTP(S) URL
-	InputType    InputType     `json:"input_type"`     // "local_directory" | "http_url"
-	CurrentStep  string        `json:"current_step"`   // Current pipeline step
-	Status       JobStatus     `json:"status"`         // Job execution status
-	Steps        []PipelineStep `json:"steps"`         // Ordered list of pipeline steps
-	Config       ProjectConfig  `json:"config"`        // Project configuration snapshot
-	TotalFiles   int           `json:"total_files"`    // Total FHIR files processed
-	TotalBytes   int64         `json:"total_bytes"`    // Total data volume in bytes
-	ErrorMessage string        `json:"error_message,omitempty"` // Last error if failed
+	JobID        string         `json:"job_id"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	InputSource  string         `json:"input_source"`            // Local path or HTTP(S) URL
+	InputType    InputType      `json:"input_type"`              // "local_directory" | "http_url"
+	CurrentStep  string         `json:"current_step"`            // Current pipeline step
+	Status       JobStatus      `json:"status"`                  // Job execution status
+	Steps        []PipelineStep `json:"steps"`                   // Ordered list of pipeline steps
+	Config       ProjectConfig  `json:"config"`                  // Project configuration snapshot
+	TotalFiles   int            `json:"total_files"`             // Total FHIR files processed
+	TotalBytes   int64          `json:"total_bytes"`             // Total data volume in bytes
+	ErrorMessage string         `json:"error_message,omitempty"` // Last error if failed
 }
 
 // InputType defines the source type for FHIR data
@@ -53,9 +53,10 @@ func IsValidJobStatus(s JobStatus) bool {
 
 // CanTransitionTo checks if state transition is valid
 // Valid transitions:
-//   pending -> in_progress
-//   in_progress -> completed | failed
-//   failed -> in_progress (manual retry)
+//
+//	pending -> in_progress
+//	in_progress -> completed | failed
+//	failed -> in_progress (manual retry)
 func (s JobStatus) CanTransitionTo(next JobStatus) bool {
 	switch s {
 	case JobStatusPending:

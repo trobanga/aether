@@ -113,7 +113,7 @@ func IsNetworkError(err error) bool {
 		"timeout",
 		"temporary failure",
 		"network is unreachable",
-		"deadline exceeded",  // Catches "context deadline exceeded"
+		"deadline exceeded", // Catches "context deadline exceeded"
 		"EOF",
 	}
 

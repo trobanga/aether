@@ -7,14 +7,14 @@ import (
 
 // PipelineStep represents a discrete stage in the pipeline
 type PipelineStep struct {
-	Name           StepName     `json:"name"`
-	Status         StepStatus   `json:"status"`
-	StartedAt      *time.Time   `json:"started_at,omitempty"`
-	CompletedAt    *time.Time   `json:"completed_at,omitempty"`
-	FilesProcessed int          `json:"files_processed"`
-	BytesProcessed int64        `json:"bytes_processed"`
-	RetryCount     int          `json:"retry_count"`
-	LastError      *StepError   `json:"last_error,omitempty"`
+	Name           StepName   `json:"name"`
+	Status         StepStatus `json:"status"`
+	StartedAt      *time.Time `json:"started_at,omitempty"`
+	CompletedAt    *time.Time `json:"completed_at,omitempty"`
+	FilesProcessed int        `json:"files_processed"`
+	BytesProcessed int64      `json:"bytes_processed"`
+	RetryCount     int        `json:"retry_count"`
+	LastError      *StepError `json:"last_error,omitempty"`
 }
 
 // StepName defines the available pipeline steps
@@ -40,7 +40,7 @@ const (
 
 // StepError captures error details for a failed step
 type StepError struct {
-	Type       ErrorType `json:"type"`          // "transient" | "non_transient"
+	Type       ErrorType `json:"type"` // "transient" | "non_transient"
 	Message    string    `json:"message"`
 	HTTPStatus int       `json:"http_status,omitempty"`
 	Timestamp  time.Time `json:"timestamp"`
@@ -58,7 +58,7 @@ func (e *StepError) Error() string {
 type ErrorType string
 
 const (
-	ErrorTypeTransient    ErrorType = "transient"    // Network, 5xx, timeout - automatic retry
+	ErrorTypeTransient    ErrorType = "transient"     // Network, 5xx, timeout - automatic retry
 	ErrorTypeNonTransient ErrorType = "non_transient" // 4xx, validation, malformed - manual intervention
 )
 
@@ -84,9 +84,10 @@ func IsValidStepStatus(s StepStatus) bool {
 
 // CanTransitionTo checks if step status transition is valid
 // Valid transitions:
-//   pending -> in_progress
-//   in_progress -> completed | failed
-//   failed -> in_progress (retry if transient error)
+//
+//	pending -> in_progress
+//	in_progress -> completed | failed
+//	failed -> in_progress (retry if transient error)
 func (s StepStatus) CanTransitionTo(next StepStatus) bool {
 	switch s {
 	case StepStatusPending:

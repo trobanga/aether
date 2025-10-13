@@ -21,12 +21,12 @@ type AetherError struct {
 type ErrorCategory string
 
 const (
-	CategoryNetwork      ErrorCategory = "network"
-	CategoryFileSystem   ErrorCategory = "filesystem"
-	CategoryValidation   ErrorCategory = "validation"
-	CategoryService      ErrorCategory = "service"
+	CategoryNetwork       ErrorCategory = "network"
+	CategoryFileSystem    ErrorCategory = "filesystem"
+	CategoryValidation    ErrorCategory = "validation"
+	CategoryService       ErrorCategory = "service"
 	CategoryConfiguration ErrorCategory = "configuration"
-	CategoryState        ErrorCategory = "state"
+	CategoryState         ErrorCategory = "state"
 )
 
 // Error implements the error interface

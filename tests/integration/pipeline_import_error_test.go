@@ -32,7 +32,7 @@ func TestPipelineImportError_UnreachableURL(t *testing.T) {
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
-			InitialBackoffMs: 10,  // Short backoff for fast test
+			InitialBackoffMs: 10, // Short backoff for fast test
 			MaxBackoffMs:     100,
 		},
 	}
