@@ -1,7 +1,8 @@
 name: aether-test
 
 networks:
-  dimp:
+  aether:
 
 include:
+  - torch/compose.yaml
   - dimp/compose.yaml

@@ -43,7 +43,7 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 		"dataExtraction": map[string]interface{}{
 			"attributeGroups": []map[string]interface{}{
 				{
-					"name":        "demographics",
+					"name":         "demographics",
 					"resourceType": "Patient",
 					"attributes":   []string{"birthDate", "gender"},
 				},

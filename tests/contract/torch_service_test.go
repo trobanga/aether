@@ -80,8 +80,8 @@ func TestTORCHService_SubmitExtraction_InvalidCRTDL(t *testing.T) {
 			"resourceType": "OperationOutcome",
 			"issue": []map[string]interface{}{
 				{
-					"severity": "error",
-					"code":     "invalid",
+					"severity":    "error",
+					"code":        "invalid",
 					"diagnostics": "CRTDL validation failed: missing inclusionCriteria",
 				},
 			},

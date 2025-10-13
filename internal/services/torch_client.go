@@ -38,14 +38,14 @@ type TORCHParameter struct {
 
 // TORCHExtractionResult represents the FHIR Parameters response with extraction results
 type TORCHExtractionResult struct {
-	ResourceType string                  `json:"resourceType"`
-	Parameter    []TORCHResultParameter  `json:"parameter"`
+	ResourceType string                 `json:"resourceType"`
+	Parameter    []TORCHResultParameter `json:"parameter"`
 }
 
 // TORCHResultParameter represents an output parameter containing file URLs
 type TORCHResultParameter struct {
-	Name string             `json:"name"`
-	Part []TORCHResultPart  `json:"part,omitempty"`
+	Name string            `json:"name"`
+	Part []TORCHResultPart `json:"part,omitempty"`
 }
 
 // TORCHResultPart represents a part of an output parameter (e.g., file URL)

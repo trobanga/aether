@@ -43,7 +43,7 @@ func CreateJob(inputSource string, config models.ProjectConfig, logger *lib.Logg
 		UpdatedAt:          time.Now(),
 		InputSource:        inputSource,
 		InputType:          inputType,
-		TORCHExtractionURL: "", // Will be set during TORCH extraction if applicable
+		TORCHExtractionURL: "",                        // Will be set during TORCH extraction if applicable
 		CurrentStep:        string(models.StepImport), // Always start with import
 		Status:             models.JobStatusPending,
 		Steps:              steps,

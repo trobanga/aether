@@ -44,3 +44,6 @@ coverage.html
 # Temporary files
 *.tmp
 *.log
+
+# Downloaded test data (downloaded in CI, not committed)
+.github/test/torch/testdata/
