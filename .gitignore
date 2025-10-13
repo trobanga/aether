@@ -21,8 +21,6 @@ vendor/
 # Build output
 bin/
 dist/
-aether
-aether-*
 
 # IDE files
 .vscode/
