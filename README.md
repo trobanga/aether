@@ -26,6 +26,8 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 
 ## Quick Start
 
+![Aether Quick Start Demo](demo-quick-start.gif)
+
 ### Installation
 
 **From source:**
