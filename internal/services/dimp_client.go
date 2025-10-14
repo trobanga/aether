@@ -127,7 +127,24 @@ type DIMPError struct {
 }
 
 func (e *DIMPError) Error() string {
-	return fmt.Sprintf("DIMP service error: HTTP %d: %s", e.StatusCode, e.Status)
+	msg := fmt.Sprintf("DIMP service error: HTTP %d: %s", e.StatusCode, e.Status)
+
+	// Include response body if present
+	if e.Body != "" {
+		msg += fmt.Sprintf("\nResponse: %s", e.Body)
+	}
+
+	// Add helpful context for common errors
+	if e.StatusCode == 500 {
+		msg += "\n\nPossible causes:"
+		msg += "\n  - VFPS pseudonymization namespace not initialized"
+		msg += "\n  - Invalid FHIR resource structure"
+		msg += "\n  - DIMP service configuration issue"
+		msg += "\n\nFor VFPS namespace errors, ensure the required namespace(s) are created via the VFPS API:"
+		msg += "\n  curl -X POST http://vfps:8080/api/v1/Namespace -H 'content-type: application/json' -d '{\"name\":\"patient-identifiers\",...}'"
+	}
+
+	return msg
 }
 
 // IsRetryable returns true if this error should be retried

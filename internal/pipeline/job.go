@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,30 +12,44 @@ import (
 
 // CreateJob initializes a new pipeline job
 // Returns the created job with generated UUID and initialized steps
-func CreateJob(inputSource string, config models.ProjectConfig) (*models.PipelineJob, error) {
+func CreateJob(inputSource string, config models.ProjectConfig, logger *lib.Logger) (*models.PipelineJob, error) {
 	// Generate unique job ID
 	jobID := uuid.New().String()
 
-	// Determine input type
-	inputType := determineInputType(inputSource)
+	// Detect input type using enhanced detection
+	inputType, err := lib.DetectInputType(inputSource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect input type: %w", err)
+	}
+
+	logger.Info("Detected input type", "type", inputType, "source", inputSource)
+
+	// Validate CRTDL syntax if input is CRTDL file
+	if inputType == models.InputTypeCRTDL {
+		if err := lib.ValidateCRTDLSyntax(inputSource); err != nil {
+			return nil, fmt.Errorf("CRTDL validation failed: %w", err)
+		}
+		logger.Info("CRTDL syntax validation passed")
+	}
 
 	// Initialize steps from config
 	steps := models.InitializeSteps(config.Pipeline.EnabledSteps)
 
 	// Create job
 	job := &models.PipelineJob{
-		JobID:        jobID,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-		InputSource:  inputSource,
-		InputType:    inputType,
-		CurrentStep:  string(models.StepImport), // Always start with import
-		Status:       models.JobStatusPending,
-		Steps:        steps,
-		Config:       config,
-		TotalFiles:   0,
-		TotalBytes:   0,
-		ErrorMessage: "",
+		JobID:              jobID,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
+		InputSource:        inputSource,
+		InputType:          inputType,
+		TORCHExtractionURL: "",                        // Will be set during TORCH extraction if applicable
+		CurrentStep:        string(models.StepImport), // Always start with import
+		Status:             models.JobStatusPending,
+		Steps:              steps,
+		Config:             config,
+		TotalFiles:         0,
+		TotalBytes:         0,
+		ErrorMessage:       "",
 	}
 
 	// Validate the job
@@ -55,14 +68,6 @@ func CreateJob(inputSource string, config models.ProjectConfig) (*models.Pipelin
 	}
 
 	return job, nil
-}
-
-// determineInputType detects whether input is a local path or HTTP URL
-func determineInputType(inputSource string) models.InputType {
-	if strings.HasPrefix(inputSource, "http://") || strings.HasPrefix(inputSource, "https://") {
-		return models.InputTypeHTTP
-	}
-	return models.InputTypeLocal
 }
 
 // LoadJob loads an existing job from disk

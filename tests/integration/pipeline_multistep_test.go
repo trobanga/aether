@@ -68,8 +68,9 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 		JobsDir: jobsDir,
 	}
 
+	logger := lib.NewLogger(lib.LogLevelInfo)
 	// Create job
-	job, err := pipeline.CreateJob(importDir, config)
+	job, err := pipeline.CreateJob(importDir, config, logger)
 	require.NoError(t, err)
 	require.NotEmpty(t, job.JobID)
 
@@ -78,7 +79,7 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 	require.NoError(t, pipeline.UpdateJob(jobsDir, startedJob))
 
 	// Execute import step
-	logger := lib.NewLogger(lib.LogLevelError) // Suppress logs in tests
+	logger = lib.NewLogger(lib.LogLevelError) // Suppress logs in tests
 	httpClient := services.NewHTTPClient(30*time.Second, config.Retry, logger)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 	require.NoError(t, err)
@@ -184,15 +185,16 @@ func TestPipelineMultiStep_OnlyImportEnabled(t *testing.T) {
 		JobsDir: jobsDir,
 	}
 
+	logger := lib.NewLogger(lib.LogLevelInfo)
 	// Create and start job
-	job, err := pipeline.CreateJob(importDir, config)
+	job, err := pipeline.CreateJob(importDir, config, logger)
 	require.NoError(t, err)
 
 	startedJob := pipeline.StartJob(job)
 	require.NoError(t, pipeline.UpdateJob(jobsDir, startedJob))
 
 	// Execute import
-	logger := lib.NewLogger(lib.LogLevelError)
+	logger = lib.NewLogger(lib.LogLevelError)
 	httpClient := services.NewHTTPClient(30*time.Second, config.Retry, logger)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 	require.NoError(t, err)
@@ -299,8 +301,9 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 		JobsDir: jobsDir,
 	}
 
+	logger := lib.NewLogger(lib.LogLevelInfo)
 	// Create job
-	job, err := pipeline.CreateJob(importDir, config)
+	job, err := pipeline.CreateJob(importDir, config, logger)
 	require.NoError(t, err)
 	jobID := job.JobID
 
@@ -308,7 +311,7 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 	startedJob := pipeline.StartJob(job)
 	require.NoError(t, pipeline.UpdateJob(jobsDir, startedJob))
 
-	logger := lib.NewLogger(lib.LogLevelError)
+	logger = lib.NewLogger(lib.LogLevelError)
 	httpClient := services.NewHTTPClient(30*time.Second, config.Retry, logger)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 	require.NoError(t, err)

@@ -1,13 +1,14 @@
 name: dimp
 
 networks:
+  dimp:
   vfps:
 
 services:
   fhir-pseudonymizer:
     image: ghcr.io/miracum/fhir-pseudonymizer:v2.22.10
     ports: [ ":8080" ]
-    networks: [ "dimp" ]
+    networks: [ "aether", "dimp" ]
     volumes:
       - "./anonymization.yaml:/opt/fhir-pseudonymizer/anonymization.yaml:ro"
     environment:

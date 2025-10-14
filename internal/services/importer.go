@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/trobanga/aether/internal/lib"
 	"github.com/trobanga/aether/internal/models"
@@ -180,6 +181,35 @@ func ValidateImportSource(sourcePath string, inputType models.InputType) error {
 		// Just check format
 		if sourcePath == "" {
 			return fmt.Errorf("URL cannot be empty")
+		}
+		return nil
+
+	case models.InputTypeCRTDL:
+		// CRTDL file validation
+		if sourcePath == "" {
+			return fmt.Errorf("CRTDL file path cannot be empty")
+		}
+		// Check file exists and is readable
+		info, err := os.Stat(sourcePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("CRTDL file does not exist: %s", sourcePath)
+			}
+			return fmt.Errorf("cannot access CRTDL file: %w", err)
+		}
+		if info.IsDir() {
+			return fmt.Errorf("CRTDL path is a directory, not a file: %s", sourcePath)
+		}
+		return nil
+
+	case models.InputTypeTORCHURL:
+		// TORCH result URL validation
+		if sourcePath == "" {
+			return fmt.Errorf("TORCH result URL cannot be empty")
+		}
+		// Basic URL format check
+		if !strings.HasPrefix(sourcePath, "http://") && !strings.HasPrefix(sourcePath, "https://") {
+			return fmt.Errorf("TORCH URL must start with http:// or https://")
 		}
 		return nil
 

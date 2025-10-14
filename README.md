@@ -15,7 +15,8 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 
 ### Key Features
 
-- **FHIR Data Import**: Import from local directories or HTTP URLs with progress indicators
+- **TORCH Integration**: Direct FHIR data extraction from TORCH servers using CRTDL query files
+- **FHIR Data Import**: Import from local directories, HTTP URLs, or TORCH extractions with progress indicators
 - **Session-Independent**: Resume pipelines across terminal sessions with file-based state persistence
 - **DIMP Pseudonymization**: Optional de-identification and pseudonymization via DIMP HTTP service
 - **Configurable Pipelines**: Enable/disable processing steps per project requirements
@@ -24,6 +25,8 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 - **Medical Data Focus**: Purpose-built for TORCH FHIR extractions and medical research workflows
 
 ## Quick Start
+
+![Aether Quick Start Demo](demo-quick-start.gif)
 
 ### Installation
 
@@ -61,6 +64,12 @@ aether pipeline start --input /path/to/torch/output
 
 # From HTTP URL
 aether pipeline start --input https://example.com/fhir/export/job-123
+
+# From CRTDL file (TORCH extraction)
+aether pipeline start --input /path/to/query.crtdl
+
+# From TORCH result URL (reuse existing extraction)
+aether pipeline start --input http://localhost:8080/fhir/result/abc123
 ```
 
 **3. Monitor progress:**
@@ -79,6 +88,70 @@ aether pipeline continue <job-id>
 ```
 
 See the [Quickstart Guide](specs/001-dup-pipeline-we/quickstart.md) for detailed usage instructions.
+
+### TORCH Integration
+
+Aether supports direct data extraction from TORCH servers using CRTDL (Cohort Representation for Trial Data Linking) files, eliminating manual file downloads.
+
+**What is TORCH?**
+TORCH is a FHIR-based data extraction service that allows researchers to define patient cohorts using CRTDL query files and retrieve matching FHIR data automatically.
+
+**Input Methods:**
+
+1. **CRTDL File Extraction** (recommended for new queries):
+   ```bash
+   aether pipeline start --input /path/to/cohort-query.crtdl
+   ```
+   - Submits CRTDL to TORCH server
+   - Polls extraction status until complete
+   - Downloads resulting FHIR NDJSON files
+   - Continues with pipeline processing
+
+2. **TORCH Result URL** (for reusing existing extractions):
+   ```bash
+   aether pipeline start --input http://localhost:8080/fhir/result/abc123
+   ```
+   - Skips extraction submission
+   - Downloads files directly from result URL
+   - Useful for resuming or reprocessing data
+
+**Configuration:**
+
+Add TORCH settings to `aether.yaml`:
+```yaml
+services:
+  torch:
+    base_url: "http://localhost:8080"
+    username: "your-username"
+    password: "your-password"
+    extraction_timeout_minutes: 30
+    polling_interval_seconds: 5
+```
+
+**CRTDL File Format:**
+
+CRTDL files must contain:
+- `cohortDefinition`: Patient inclusion/exclusion criteria
+- `dataExtraction`: FHIR resource types and attributes to extract
+
+See [TORCH quickstart](specs/002-import-via-torch/quickstart.md) for examples and detailed workflow.
+
+**Error Handling:**
+
+- **Server unreachable**: Clear error within 5 seconds
+- **Authentication failure**: Fails early with credential error
+- **Extraction timeout**: Configurable timeout (default 30 minutes)
+- **Empty results**: Gracefully handles zero-patient cohorts
+- **Malformed CRTDL**: Validates syntax before submission
+
+**Backward Compatibility:**
+
+Existing workflows using local directories or HTTP URLs continue to work without changes:
+```bash
+# Still supported
+aether pipeline start --input ./test-data/
+aether pipeline start --input https://example.com/fhir/export
+```
 
 ## Architecture
 
@@ -274,11 +347,18 @@ Aether follows three core principles defined in the [project constitution](.spec
 
 ## Documentation
 
+### Core Pipeline (001-dup-pipeline-we)
 - **[Feature Specification](specs/001-dup-pipeline-we/spec.md)**: Complete functional requirements
 - **[Implementation Plan](specs/001-dup-pipeline-we/plan.md)**: Technical architecture and decisions
 - **[Quickstart Guide](specs/001-dup-pipeline-we/quickstart.md)**: Detailed usage instructions
 - **[Data Model](specs/001-dup-pipeline-we/data-model.md)**: Domain entities and schemas
 - **[API Contracts](specs/001-dup-pipeline-we/contracts/)**: HTTP service specifications
+
+### TORCH Integration (002-import-via-torch)
+- **[TORCH Specification](specs/002-import-via-torch/spec.md)**: TORCH extraction requirements
+- **[TORCH Implementation Plan](specs/002-import-via-torch/plan.md)**: TORCH integration design
+- **[TORCH Quickstart](specs/002-import-via-torch/quickstart.md)**: CRTDL extraction workflow
+- **[TORCH API Contract](specs/002-import-via-torch/contracts/torch-api.md)**: TORCH API specification
 
 ## Roadmap
 

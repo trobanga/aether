@@ -3,10 +3,25 @@ package services
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/trobanga/aether/internal/models"
 )
+
+// expandEnvVars expands environment variables in the format ${VAR} or $VAR
+func expandEnvVars(s string) string {
+	// Match ${VAR} pattern
+	re := regexp.MustCompile(`\$\{([A-Z_][A-Z0-9_]*)\}`)
+	expanded := re.ReplaceAllStringFunc(s, func(match string) string {
+		// Extract variable name (remove ${ and })
+		varName := strings.TrimSuffix(strings.TrimPrefix(match, "${"), "}")
+		// Get environment variable value, return empty string if not set
+		return os.Getenv(varName)
+	})
+	return expanded
+}
 
 // LoadConfig loads configuration from file and merges with CLI flags
 // Priority order (highest to lowest):
@@ -44,18 +59,28 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 
 	// Build config manually from viper values
 	// (Viper.Unmarshal has issues with nested structs in some versions)
+	// Expand environment variables in string values
 	config := models.ProjectConfig{
 		Services: models.ServiceConfig{
-			DIMPUrl:              viper.GetString("services.dimp_url"),
-			CSVConversionUrl:     viper.GetString("services.csv_conversion_url"),
-			ParquetConversionUrl: viper.GetString("services.parquet_conversion_url"),
+			TORCH: models.TORCHConfig{
+				BaseURL:                   expandEnvVars(viper.GetString("services.torch.base_url")),
+				FileServerURL:             expandEnvVars(viper.GetString("services.torch.file_server_url")),
+				Username:                  expandEnvVars(viper.GetString("services.torch.username")),
+				Password:                  expandEnvVars(viper.GetString("services.torch.password")),
+				ExtractionTimeoutMinutes:  viper.GetInt("services.torch.extraction_timeout_minutes"),
+				PollingIntervalSeconds:    viper.GetInt("services.torch.polling_interval_seconds"),
+				MaxPollingIntervalSeconds: viper.GetInt("services.torch.max_polling_interval_seconds"),
+			},
+			DIMPUrl:              expandEnvVars(viper.GetString("services.dimp_url")),
+			CSVConversionUrl:     expandEnvVars(viper.GetString("services.csv_conversion_url")),
+			ParquetConversionUrl: expandEnvVars(viper.GetString("services.parquet_conversion_url")),
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      viper.GetInt("retry.max_attempts"),
 			InitialBackoffMs: viper.GetInt64("retry.initial_backoff_ms"),
 			MaxBackoffMs:     viper.GetInt64("retry.max_backoff_ms"),
 		},
-		JobsDir: viper.GetString("jobs_dir"),
+		JobsDir: expandEnvVars(viper.GetString("jobs_dir")),
 	}
 
 	// Get enabled steps
@@ -89,6 +114,16 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 		}
 		if config.JobsDir == "" {
 			config.JobsDir = "./jobs"
+		}
+		// Apply TORCH defaults for missing values
+		if config.Services.TORCH.ExtractionTimeoutMinutes == 0 {
+			config.Services.TORCH.ExtractionTimeoutMinutes = 30
+		}
+		if config.Services.TORCH.PollingIntervalSeconds == 0 {
+			config.Services.TORCH.PollingIntervalSeconds = 5
+		}
+		if config.Services.TORCH.MaxPollingIntervalSeconds == 0 {
+			config.Services.TORCH.MaxPollingIntervalSeconds = 30
 		}
 	}
 

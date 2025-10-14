@@ -236,6 +236,13 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 				"resourceType", resourceType,
 				"id", resourceID,
 				"error", err)
+
+			// Print user-friendly error message
+			fmt.Printf("\n✗ DIMP pseudonymization failed\n")
+			fmt.Printf("  File: %s (line %d)\n", filepath.Base(inputFile), resourcesProcessed+1)
+			fmt.Printf("  Resource: %s/%s\n", resourceType, resourceID)
+			fmt.Printf("  Error: %v\n\n", err)
+
 			return resourcesProcessed, fmt.Errorf("failed to pseudonymize resource at line %d: %w", resourcesProcessed+1, err)
 		}
 

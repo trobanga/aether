@@ -93,10 +93,20 @@ test-unit:
 	@echo "Running unit tests..."
 	$(GOTEST) -v ./tests/unit/...
 
+## test-unit-coverage: Run unit tests with coverage
+test-unit-coverage:
+	@echo "Running unit tests with coverage..."
+	$(GOTEST) -v -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=./... ./tests/unit/...
+
 ## test-integration: Run integration tests only
 test-integration:
 	@echo "Running integration tests..."
 	$(GOTEST) -v ./tests/integration/...
+
+## test-integration-coverage: Run integration tests with coverage
+test-integration-coverage:
+	@echo "Running integration tests with coverage..."
+	$(GOTEST) -v -coverprofile=coverage-integration.out -covermode=atomic -coverpkg=./... ./tests/integration/...
 
 ## test-contract: Run contract tests only
 test-contract:
@@ -109,6 +119,14 @@ coverage:
 	$(GOTEST) -cover -coverprofile=coverage.out ./...
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
+
+## coverage-merge: Merge unit and integration coverage files
+coverage-merge:
+	@echo "Merging coverage files..."
+	@echo "mode: atomic" > coverage.out
+	@tail -n +2 coverage-unit.out >> coverage.out 2>/dev/null || true
+	@tail -n +2 coverage-integration.out >> coverage.out 2>/dev/null || true
+	@echo "Coverage files merged into coverage.out"
 
 ## fmt: Format Go source code
 fmt:

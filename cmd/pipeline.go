@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	inputSource string
-	noProgress  bool
+	noProgress bool
 )
 
 // pipelineCmd represents the pipeline command group
@@ -30,22 +29,32 @@ Available subcommands:
 
 // pipelineStartCmd represents the pipeline start command
 var pipelineStartCmd = &cobra.Command{
-	Use:   "start",
+	Use:   "start <input>",
 	Short: "Start a new pipeline job",
 	Long: `Start a new Data Use Process pipeline job.
 
-The input can be either a local directory containing FHIR NDJSON files,
-or an HTTP(S) URL to download FHIR data from.
+The input can be:
+  • CRTDL file (*.crtdl) for TORCH-based data extraction
+  • Local directory containing FHIR NDJSON files
+  • HTTP(S) URL to download FHIR data from
+  • TORCH result URL for direct download
 
 Examples:
-  # Import from local directory
-  aether pipeline start --input /path/to/torch/output
+  # Extract data using CRTDL query via TORCH
+  aether pipeline start query.crtdl
 
-  # Download from URL
-  aether pipeline start --input https://example.com/fhir/export
+  # Import from local directory
+  aether pipeline start /path/to/fhir/data
+
+  # Download from HTTP URL
+  aether pipeline start https://example.com/fhir/Patient.ndjson
+
+  # Download from TORCH result URL
+  aether pipeline start http://torch-server/fhir/extraction/result-123
 
   # Start without progress indicators
-  aether pipeline start --input /data --no-progress`,
+  aether pipeline start query.crtdl --no-progress`,
+	Args: cobra.ExactArgs(1),
 	RunE: runPipelineStart,
 }
 
@@ -123,10 +132,6 @@ func init() {
 	pipelineCmd.AddCommand(pipelineContinueCmd)
 
 	// Flags for pipeline start
-	pipelineStartCmd.Flags().StringVarP(&inputSource, "input", "i", "", "Input source (local directory or HTTP URL) [required]")
-	if err := pipelineStartCmd.MarkFlagRequired("input"); err != nil {
-		panic(fmt.Sprintf("failed to mark 'input' flag as required: %v", err))
-	}
 	pipelineStartCmd.Flags().BoolVar(&noProgress, "no-progress", false, "Disable progress indicators")
 }
 
@@ -190,6 +195,8 @@ func executeStep(job *models.PipelineJob, stepName models.StepName, config *mode
 }
 
 func runPipelineStart(cmd *cobra.Command, args []string) error {
+	inputSource := args[0]
+
 	// Load configuration
 	config, err := services.LoadConfig(cfgFile)
 	if err != nil {
@@ -212,7 +219,7 @@ func runPipelineStart(cmd *cobra.Command, args []string) error {
 
 	// Create job
 	logger.Info("Creating new pipeline job", "input", inputSource)
-	job, err := pipeline.CreateJob(inputSource, *config)
+	job, err := pipeline.CreateJob(inputSource, *config, logger)
 	if err != nil {
 		return fmt.Errorf("failed to create job: %w", err)
 	}

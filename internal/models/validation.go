@@ -209,11 +209,17 @@ func (c *ProjectConfig) Validate() error {
 }
 
 // ValidateJobsDir checks if the jobs directory exists and is writable
+// Creates the directory automatically if it doesn't exist
 func ValidateJobsDir(path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("jobs directory does not exist: %s", path)
+			// Create directory with appropriate permissions
+			if err := os.MkdirAll(path, 0755); err != nil {
+				return fmt.Errorf("failed to create jobs directory: %w", err)
+			}
+			// Directory created successfully, no need to check further
+			return nil
 		}
 		return fmt.Errorf("cannot access jobs directory: %w", err)
 	}
@@ -240,6 +246,28 @@ func ValidateJobsDir(path string) error {
 func (c *ProjectConfig) ValidateServiceConnectivity() error {
 	client := &http.Client{
 		Timeout: 5 * time.Second, // Quick connectivity check
+	}
+
+	// Check TORCH connectivity if base URL is configured
+	// TORCH is used by InputTypeCRTDL and InputTypeTORCHURL
+	if c.Services.TORCH.BaseURL != "" {
+		parsedURL, err := url.Parse(c.Services.TORCH.BaseURL)
+		if err != nil {
+			return fmt.Errorf("invalid TORCH service URL: %w", err)
+		}
+
+		checkURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
+
+		req, err := http.NewRequest("HEAD", checkURL, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request for TORCH service: %w", err)
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("TORCH service unreachable at %s: %w", checkURL, err)
+		}
+		defer func() { _ = resp.Body.Close() }()
 	}
 
 	for _, step := range c.Pipeline.EnabledSteps {

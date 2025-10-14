@@ -33,9 +33,7 @@ dist/
 # Job runtime data (never commit job state)
 jobs/
 
-# Local configuration (use aether.example.yaml as template)
-aether.yaml
-config/aether.yaml
+*.tar.gz
 
 # Test coverage
 coverage.txt
@@ -44,3 +42,6 @@ coverage.html
 # Temporary files
 *.tmp
 *.log
+
+# Downloaded test data (downloaded in CI, not committed)
+.github/test/torch/testdata/

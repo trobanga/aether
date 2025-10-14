@@ -39,7 +39,7 @@ func TestRetryTracking_IncrementRetryCount(t *testing.T) {
 	logger := lib.NewLogger(lib.LogLevelInfo)
 
 	// Create and start job
-	job, err := pipeline.CreateJob(sourceDir, config)
+	job, err := pipeline.CreateJob(sourceDir, config, logger)
 	require.NoError(t, err)
 
 	startedJob := pipeline.StartJob(job)
@@ -104,7 +104,8 @@ func TestRetryTracking_MultipleRetries(t *testing.T) {
 		JobsDir: jobsDir,
 	}
 
-	job, err := pipeline.CreateJob(sourceDir, config)
+	logger := lib.NewLogger(lib.LogLevelInfo)
+	job, err := pipeline.CreateJob(sourceDir, config, logger)
 	require.NoError(t, err)
 
 	startedJob := pipeline.StartJob(job)
@@ -218,7 +219,8 @@ func TestRetryTracking_ErrorTypePersistence(t *testing.T) {
 		JobsDir: jobsDir,
 	}
 
-	job, err := pipeline.CreateJob(sourceDir, config)
+	logger := lib.NewLogger(lib.LogLevelInfo)
+	job, err := pipeline.CreateJob(sourceDir, config, logger)
 	require.NoError(t, err)
 
 	startedJob := pipeline.StartJob(job)
@@ -340,7 +342,7 @@ func TestRetryTracking_ResetOnSuccess(t *testing.T) {
 
 	logger := lib.NewLogger(lib.LogLevelInfo)
 
-	job, err := pipeline.CreateJob(sourceDir, config)
+	job, err := pipeline.CreateJob(sourceDir, config, logger)
 	require.NoError(t, err)
 
 	startedJob := pipeline.StartJob(job)

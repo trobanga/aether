@@ -5,8 +5,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/trobanga/aether/internal/lib"
+	"github.com/trobanga/aether/internal/models"
+	"github.com/trobanga/aether/internal/services"
 )
 
 // T052: Contract test for DIMP service interaction per contracts/dimp-service.md
@@ -46,27 +50,27 @@ func TestDIMPService_Pseudonymize_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Test the contract - this will fail until we implement internal/services/dimp_client.go
-	// client := services.NewDIMPClient(server.URL)
-	//
-	// originalPatient := map[string]interface{}{
-	//     "resourceType": "Patient",
-	//     "id":           "example-patient-123",
-	//     "identifier": []map[string]string{
-	//         {"system": "http://hospital.org/patients", "value": "12345"},
-	//     },
-	//     "name": []map[string]interface{}{
-	//         {"family": "Doe", "given": []string{"John"}},
-	//     },
-	//     "birthDate": "1980-01-01",
-	// }
-	//
-	// result, err := client.Pseudonymize(originalPatient)
-	// assert.NoError(t, err)
-	// assert.Equal(t, "pseudonym-abc123xyz", result["id"])
-	// assert.Equal(t, "REDACTED", result["name"].([]map[string]interface{})[0]["family"])
+	// Test the contract
+	logger := lib.NewLogger(lib.LogLevelError)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	t.Skip("Skipping until internal/services/dimp_client.go is implemented")
+	originalPatient := map[string]interface{}{
+		"resourceType": "Patient",
+		"id":           "example-patient-123",
+		"identifier": []map[string]string{
+			{"system": "http://hospital.org/patients", "value": "12345"},
+		},
+		"name": []map[string]interface{}{
+			{"family": "Doe", "given": []string{"John"}},
+		},
+		"birthDate": "1980-01-01",
+	}
+
+	result, err := client.Pseudonymize(originalPatient)
+	assert.NoError(t, err)
+	assert.Equal(t, "pseudonym-abc123xyz", result["id"])
+	assert.Equal(t, "REDACTED", result["name"].([]interface{})[0].(map[string]interface{})["family"])
 }
 
 func TestDIMPService_400BadRequest(t *testing.T) {
@@ -84,18 +88,18 @@ func TestDIMPService_400BadRequest(t *testing.T) {
 	defer server.Close()
 
 	// Test will verify non-retryable error
-	// client := services.NewDIMPClient(server.URL)
-	//
-	// malformedResource := map[string]interface{}{
-	//     "id": "no-resource-type",
-	// }
-	//
-	// _, err := client.Pseudonymize(malformedResource)
-	// assert.Error(t, err)
-	// assert.Contains(t, err.Error(), "400")
-	// assert.Contains(t, err.Error(), "invalid_resource")
+	logger := lib.NewLogger(lib.LogLevelError)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	t.Skip("Skipping until internal/services/dimp_client.go is implemented")
+	malformedResource := map[string]interface{}{
+		"id": "no-resource-type",
+	}
+
+	_, err := client.Pseudonymize(malformedResource)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "400")
+	assert.Contains(t, err.Error(), "invalid_resource")
 }
 
 func TestDIMPService_500InternalServerError(t *testing.T) {
@@ -115,18 +119,18 @@ func TestDIMPService_500InternalServerError(t *testing.T) {
 	defer server.Close()
 
 	// Test will verify retryable error behavior
-	// client := services.NewDIMPClient(server.URL)
-	//
-	// resource := map[string]interface{}{
-	//     "resourceType": "Patient",
-	//     "id":           "test",
-	// }
-	//
-	// _, err := client.Pseudonymize(resource)
-	// assert.Error(t, err)
-	// assert.Greater(t, callCount, 1, "Should retry on 500 error")
+	logger := lib.NewLogger(lib.LogLevelError)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
+	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	t.Skip("Skipping until internal/services/dimp_client.go is implemented")
+	resource := map[string]interface{}{
+		"resourceType": "Patient",
+		"id":           "test",
+	}
+
+	_, err := client.Pseudonymize(resource)
+	assert.Error(t, err)
+	assert.Greater(t, callCount, 1, "Should retry on 500 error")
 }
 
 func TestDIMPService_502BadGateway(t *testing.T) {
@@ -138,7 +142,18 @@ func TestDIMPService_502BadGateway(t *testing.T) {
 	defer server.Close()
 
 	// Test will verify this is treated as transient/retryable
-	t.Skip("Skipping until internal/services/dimp_client.go is implemented")
+	logger := lib.NewLogger(lib.LogLevelError)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
+	client := services.NewDIMPClient(server.URL, httpClient, logger)
+
+	resource := map[string]interface{}{
+		"resourceType": "Patient",
+		"id":           "test",
+	}
+
+	_, err := client.Pseudonymize(resource)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "502")
 }
 
 func TestDIMPService_422UnprocessableEntity(t *testing.T) {
@@ -156,5 +171,17 @@ func TestDIMPService_422UnprocessableEntity(t *testing.T) {
 	defer server.Close()
 
 	// Test will verify non-retryable error
-	t.Skip("Skipping until internal/services/dimp_client.go is implemented")
+	logger := lib.NewLogger(lib.LogLevelError)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	client := services.NewDIMPClient(server.URL, httpClient, logger)
+
+	resource := map[string]interface{}{
+		"resourceType": "Patient",
+		"invalidField": "bad",
+	}
+
+	_, err := client.Pseudonymize(resource)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "422")
+	assert.Contains(t, err.Error(), "invalid_schema")
 }
