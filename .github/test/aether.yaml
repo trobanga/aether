@@ -1,0 +1,64 @@
+# Aether DUP Pipeline Configuration Example
+# Copy this file to aether.yaml and customize for your environment
+
+services:
+  torch:
+    # TORCH server base URL
+    base_url: "${TORCH_URL}"
+
+    # TORCH file server URL (nginx for downloading extraction results)
+    file_server_url: "${TORCH_FILE_SERVER_URL}"
+
+    # TORCH authentication credentials
+    username: ""
+    password: ""
+
+    # Maximum time to wait for extraction completion (in minutes)
+    # Default: 30 minutes (reasonable for typical cohort sizes)
+    extraction_timeout_minutes: 30
+
+    # Initial polling interval when checking extraction status (in seconds)
+    # Default: 5 seconds
+    polling_interval_seconds: 5
+
+    # Maximum polling interval (exponential backoff cap, in seconds)
+    # Default: 30 seconds
+    max_polling_interval_seconds: 30
+    
+  # DIMP Pseudonymization Service (optional)
+  # Leave empty to skip pseudonymization step
+  # Uses environment variable DIMP_URL or falls back to default
+  dimp_url: "${DIMP_URL}"
+
+  # CSV Conversion Service (optional)
+  # Leave empty to skip CSV conversion
+  csv_conversion_url: "${CSV_URL}"
+
+  # Parquet Conversion Service (optional)
+  # Leave empty to skip Parquet conversion
+  parquet_conversion_url: "${PARQUET_URL}"
+
+pipeline:
+  # List of steps to execute in order
+  # Options: import, dimp, validation, csv_conversion, parquet_conversion
+  # NOTE: 'import' must always be the first step
+  enabled_steps:
+    - import
+    - dimp
+    # - csv_conversion  # Commented out - service not running
+    # - parquet_conversion  # Commented out - service not running
+
+retry:
+  # Maximum number of retry attempts for transient errors (network, 5xx)
+  # Range: 1-10
+  max_attempts: 5
+
+  # Initial backoff delay in milliseconds
+  initial_backoff_ms: 1000
+
+  # Maximum backoff delay in milliseconds (exponential backoff cap)
+  max_backoff_ms: 30000
+
+# Directory to store job state and data
+# Can be absolute or relative path
+jobs_dir: "./jobs"
