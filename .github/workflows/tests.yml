@@ -65,9 +65,36 @@ jobs:
         working-directory: .github/test
         run: ../scripts/download-testdata.sh
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pre-pull Docker images with retries
+        working-directory: .github/test
+        run: |
+          echo "Extracting image list from docker compose configuration..."
+          docker compose config --images | while read -r image; do
+            echo "Pulling $image..."
+            retry_count=0
+            max_retries=3
+            until docker pull "$image"; do
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -ge $max_retries ]; then
+                echo "Failed to pull $image after $max_retries attempts"
+                exit 1
+              fi
+              echo "Retry $retry_count/$max_retries failed, waiting 10 seconds..."
+              sleep 10
+            done
+            echo "Successfully pulled $image"
+          done
+
       - name: Start Docker services
         working-directory: .github/test
-        run: docker compose up --wait
+        run: docker compose up --wait --timeout 300
 
       - name: Fix torch output directory permissions
         run: |
