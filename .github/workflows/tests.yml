@@ -82,6 +82,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y jq ripgrep
 
+      - name: Build aether
+        run: make build
+        
       - name: Run E2E tests with dynamic ports
         working-directory: .github/test
         run: ../scripts/run-e2e-test.sh
