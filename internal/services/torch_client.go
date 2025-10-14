@@ -479,13 +479,20 @@ func (c *TORCHClient) encodeCRTDLToBase64(crtdlPath string) (string, error) {
 
 // parseExtractionResult parses FHIR Parameters response and extracts file URLs
 func (c *TORCHClient) parseExtractionResult(responseBody []byte) ([]string, error) {
+	// Log the raw response for debugging
+	c.logger.Debug("Parsing TORCH extraction result", "body_length", len(responseBody), "body", string(responseBody))
+
+	if len(responseBody) == 0 {
+		return nil, fmt.Errorf("empty response body from TORCH server")
+	}
+
 	var result TORCHExtractionResult
 	if err := json.Unmarshal(responseBody, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse extraction result: %w", err)
+		return nil, fmt.Errorf("failed to parse extraction result (invalid JSON): %w. Response body: %s", err, string(responseBody))
 	}
 
 	if result.ResourceType != "Parameters" {
-		return nil, fmt.Errorf("unexpected response type: %s (expected Parameters)", result.ResourceType)
+		return nil, fmt.Errorf("unexpected response type: %q (expected Parameters). Response body: %s", result.ResourceType, string(responseBody))
 	}
 
 	fileURLs := []string{}
