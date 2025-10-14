@@ -150,22 +150,22 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T059 [P] Add documentation for TORCH configuration in README.md or docs/
-- [ ] T060 [P] Update example config with detailed TORCH comments in config/aether.example.yaml
-- [ ] T061 [P] Add progress bar integration for TORCH download phase (reuse existing progressbar)
-- [ ] T062 Code review: verify functional purity per Constitution Principle I
-- [ ] T063 Code review: verify all tests pass and follow TDD per Constitution Principle II
-- [ ] T064 Code review: verify simplicity (KISS) per Constitution Principle III
-- [ ] T065 [P] Add edge case handling for TORCH server unreachable
-- [ ] T066 [P] Add edge case handling for TORCH timeout
-- [ ] T067 [P] Add edge case handling for empty cohort results
-- [ ] T068 [P] Add edge case handling for malformed CRTDL
-- [ ] T069 [P] Add edge case handling for authentication failures
+- [X] T059 [P] Add documentation for TORCH configuration in README.md or docs/
+- [X] T060 [P] Update example config with detailed TORCH comments in config/aether.example.yaml
+- [X] T061 [P] Add progress bar integration for TORCH download phase (reuse existing progressbar)
+- [X] T062 Code review: verify functional purity per Constitution Principle I
+- [X] T063 Code review: verify all tests pass and follow TDD per Constitution Principle II
+- [X] T064 Code review: verify simplicity (KISS) per Constitution Principle III
+- [X] T065 [P] Add edge case handling for TORCH server unreachable
+- [X] T066 [P] Add edge case handling for TORCH timeout
+- [X] T067 [P] Add edge case handling for empty cohort results
+- [X] T068 [P] Add edge case handling for malformed CRTDL
+- [X] T069 [P] Add edge case handling for authentication failures
 - [ ] T070 Run quickstart.md validation workflow
-- [ ] T071 Performance test: verify TORCH connectivity check < 5 seconds
-- [ ] T072 Performance test: verify CRTDL validation < 1 second
-- [ ] T073 Integration test: verify polling timeout works correctly
-- [ ] T074 Integration test: verify job resumption after process restart during polling
+- [X] T071 Performance test: verify TORCH connectivity check < 5 seconds
+- [X] T072 Performance test: verify CRTDL validation < 1 second
+- [X] T073 Integration test: verify polling timeout works correctly
+- [X] T074 Integration test: verify job resumption after process restart during polling
 - [ ] T075 [P] Add telemetry/metrics for TORCH operations
 - [ ] T076 Final code cleanup and refactoring
 - [ ] T077 Update CLAUDE.md with TORCH-specific commands if needed

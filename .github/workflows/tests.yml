@@ -173,8 +173,28 @@ jobs:
         working-directory: .github/test
         run: ../scripts/upload-testdata.sh
 
+      - name: Install verification tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y jq ripgrep
+
       - name: Run E2E tests with dynamic ports
-        run: .github/scripts/run-e2e-test.sh
+        working-directory: .github/test
+        run: ../scripts/run-e2e-test.sh
+
+      - name: Verify E2E test output
+        working-directory: .github/test
+        run: |
+          JOBS_DIR=./jobs ../scripts/verify-e2e-output.sh
+
+      - name: Upload E2E job outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-job-outputs-${{ github.run_id }}
+          path: .github/test/jobs/
+          retention-days: 7
+          if-no-files-found: warn
 
       - name: Capture service logs on failure
         if: failure()

@@ -327,7 +327,7 @@ func TestTORCHConfig_ValidateSuccess(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -375,7 +375,7 @@ func TestTORCHConfig_ValidateMissingBaseURL(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -415,7 +415,7 @@ func TestTORCHConfig_ValidateInvalidURL(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -455,7 +455,7 @@ func TestTORCHConfig_ValidateMissingCredentials(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -495,7 +495,7 @@ func TestTORCHConfig_ValidateInvalidTimeout(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -536,7 +536,7 @@ func TestTORCHConfig_ValidateInvalidPollingInterval(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:
@@ -577,7 +577,7 @@ func TestTORCHConfig_ValidateMaxPollingLessThanMin(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
-	os.MkdirAll(jobsDir, 0755)
+	_ = os.MkdirAll(jobsDir, 0755)
 
 	configContent := `
 services:

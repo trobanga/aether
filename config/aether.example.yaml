@@ -2,24 +2,17 @@
 # Copy this file to aether.yaml and customize for your environment
 
 services:
-  # DIMP Pseudonymization Service (optional)
-  # Leave empty to skip pseudonymization step
-  dimp_url: "http://localhost:32861/fhir"
-
-  # CSV Conversion Service (optional)
-  # Leave empty to skip CSV conversion
-  csv_conversion_url: "http://localhost:9000/convert/csv"
-
-  # Parquet Conversion Service (optional)
-  # Leave empty to skip Parquet conversion
-  parquet_conversion_url: "http://localhost:9000/convert/parquet"
-
   # TORCH Data Extraction Server (optional)
   # Used for extracting FHIR cohort data directly via CRTDL files
   # Leave empty to skip TORCH integration
   torch:
     # TORCH server base URL
     base_url: "http://localhost:8080"
+
+    # TORCH file server URL (optional - for downloading extraction files)
+    # If not specified, uses base_url for file downloads
+    # In Docker setups, this is typically the nginx container serving the output files
+    file_server_url: "http://localhost:8082"
 
     # TORCH authentication credentials
     username: "test"
@@ -36,6 +29,18 @@ services:
     # Maximum polling interval (exponential backoff cap, in seconds)
     # Default: 30 seconds
     max_polling_interval_seconds: 30
+  
+  # DIMP Pseudonymization Service (optional)
+  # Leave empty to skip pseudonymization step
+  dimp_url: "http://localhost:32861/fhir"
+
+  # CSV Conversion Service (optional)
+  # Leave empty to skip CSV conversion
+  csv_conversion_url: "http://localhost:9000/convert/csv"
+
+  # Parquet Conversion Service (optional)
+  # Leave empty to skip Parquet conversion
+  parquet_conversion_url: "http://localhost:9000/convert/parquet"
 
 pipeline:
   # List of steps to execute in order

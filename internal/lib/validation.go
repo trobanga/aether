@@ -77,8 +77,8 @@ func DetectInputType(inputSource string) (models.InputType, error) {
 
 	// Check if HTTP URL
 	if strings.HasPrefix(inputSource, "http://") || strings.HasPrefix(inputSource, "https://") {
-		// Check if TORCH result URL pattern (contains /fhir/)
-		if strings.Contains(inputSource, "/fhir/") {
+		// Check if TORCH result URL pattern (contains /fhir/extraction/ or /fhir/result/)
+		if strings.Contains(inputSource, "/fhir/extraction/") || strings.Contains(inputSource, "/fhir/result/") {
 			return models.InputTypeTORCHURL, nil
 		}
 		return models.InputTypeHTTP, nil

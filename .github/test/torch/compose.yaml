@@ -4,6 +4,16 @@ networks:
   torch:
 
 services:
+  torch-file-server:
+      networks: [ "aether", "torch" ]
+      restart: unless-stopped
+      image: nginxinc/nginx-unprivileged:1.27-alpine
+      ports: [ ":80" ]
+      volumes:
+        - ./torch.nginx.conf:/etc/nginx/nginx.conf
+        - ./output:/app/output
+      depends_on:
+        - torch
   torch:
     restart: unless-stopped
     image: ghcr.io/medizininformatik-initiative/torch:1.0.0-alpha.10
@@ -13,8 +23,8 @@ services:
       TORCH_RESULTS_PERSISTENCE: PT12H30M5S
       TORCH_BUFFERSIZE: 100
       # Connection Config
-      TORCH_BASE_URL: http://localhost:8080
-      TORCH_OUTPUT_FILE_SERVER_URL: http://localhost:80
+      TORCH_BASE_URL: http://torch:8080
+      TORCH_OUTPUT_FILE_SERVER_URL: http://torch-file-server:80
       TORCH_FLARE_URL: http://torch-flare:8080
       TORCH_FHIR_URL: http://torch-hds:8080/fhir
       # Execution variables
@@ -29,9 +39,9 @@ services:
       LOG_LEVEL: info
       
     volumes:
-      - "./output:/app/output"
+      - ./output:/app/output
     extra_hosts:
-      - "auth.localhost:host-gateway"
+      - auth.localhost:host-gateway
     depends_on:
       - torch-hds
     
@@ -40,7 +50,7 @@ services:
     ports: [ ":8080" ]
     networks: [ "torch" ]
     environment:
-      BASE_URL: "http://torch-hds:8080"
+      BASE_URL: http://torch-hds:8080
     healthcheck:
       test: [ "CMD", "curl", "-sSf", "http://localhost:8080/health" ]
       interval: 10s

@@ -209,11 +209,17 @@ func (c *ProjectConfig) Validate() error {
 }
 
 // ValidateJobsDir checks if the jobs directory exists and is writable
+// Creates the directory automatically if it doesn't exist
 func ValidateJobsDir(path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("jobs directory does not exist: %s", path)
+			// Create directory with appropriate permissions
+			if err := os.MkdirAll(path, 0755); err != nil {
+				return fmt.Errorf("failed to create jobs directory: %w", err)
+			}
+			// Directory created successfully, no need to check further
+			return nil
 		}
 		return fmt.Errorf("cannot access jobs directory: %w", err)
 	}
@@ -261,7 +267,7 @@ func (c *ProjectConfig) ValidateServiceConnectivity() error {
 		if err != nil {
 			return fmt.Errorf("TORCH service unreachable at %s: %w", checkURL, err)
 		}
-		resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 	}
 
 	for _, step := range c.Pipeline.EnabledSteps {

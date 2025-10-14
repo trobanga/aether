@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -139,7 +140,7 @@ func (c *TORCHClient) SubmitExtraction(crtdlPath string) (string, error) {
 			ErrorType:  models.ErrorTypeTransient,
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check for errors
 	if resp.StatusCode >= 400 {
@@ -165,10 +166,8 @@ func (c *TORCHClient) SubmitExtraction(crtdlPath string) (string, error) {
 		return "", fmt.Errorf("TORCH server did not return Content-Location header")
 	}
 
-	// Make absolute URL if relative
-	if !strings.HasPrefix(contentLocation, "http") {
-		contentLocation = c.config.BaseURL + contentLocation
-	}
+	// Normalize URL to use our configured base URL (handles Docker internal URLs)
+	contentLocation = c.normalizeURL(contentLocation)
 
 	c.logger.Info("TORCH extraction submitted successfully", "extraction_url", contentLocation)
 
@@ -238,7 +237,7 @@ func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bo
 		// Handle response
 		if resp.StatusCode == http.StatusAccepted {
 			// Still in progress
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			c.logger.Debug("TORCH extraction in progress", "attempt", pollCount)
 
 			// Wait with exponential backoff
@@ -255,11 +254,12 @@ func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bo
 
 		// Read response body
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		if resp.StatusCode == http.StatusOK {
 			// Extraction complete - parse result
 			c.logger.Info("TORCH extraction completed", "polls", pollCount)
+			c.logger.Debug("TORCH extraction response body", "body", string(bodyBytes))
 			return c.parseExtractionResult(bodyBytes)
 		}
 
@@ -350,13 +350,17 @@ func (c *TORCHClient) DownloadExtractionFiles(fileURLs []string, destinationDir 
 
 // downloadFile downloads a single file from URL to destination path
 func (c *TORCHClient) downloadFile(fileURL, destPath string) (models.FHIRDataFile, error) {
-	// Create request with authentication
+	// Create request
 	req, err := http.NewRequest("GET", fileURL, nil)
 	if err != nil {
 		return models.FHIRDataFile{}, fmt.Errorf("failed to create download request: %w", err)
 	}
 
-	req.Header.Set("Authorization", c.buildBasicAuthHeader())
+	// Only add authentication if downloading from TORCH API server (not file server)
+	// File servers (nginx) typically don't require auth
+	if c.config.FileServerURL == "" || !strings.Contains(fileURL, c.config.FileServerURL) {
+		req.Header.Set("Authorization", c.buildBasicAuthHeader())
+	}
 	req.Header.Set("Accept", "application/fhir+ndjson")
 
 	// Send request
@@ -369,7 +373,7 @@ func (c *TORCHClient) downloadFile(fileURL, destPath string) (models.FHIRDataFil
 			ErrorType:  models.ErrorTypeTransient,
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check for errors
 	if resp.StatusCode >= 400 {
@@ -389,12 +393,12 @@ func (c *TORCHClient) downloadFile(fileURL, destPath string) (models.FHIRDataFil
 	if err != nil {
 		return models.FHIRDataFile{}, fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer destFile.Close()
+	defer func() { _ = destFile.Close() }()
 
 	// Copy content
 	bytesWritten, err := io.Copy(destFile, resp.Body)
 	if err != nil {
-		os.Remove(destPath)
+		_ = os.Remove(destPath)
 		return models.FHIRDataFile{}, fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -434,7 +438,7 @@ func (c *TORCHClient) Ping() error {
 		c.logger.Error("TORCH ping failed", "error", err)
 		return fmt.Errorf("TORCH server unreachable: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Accept any non-5xx response as "server is up"
 	if resp.StatusCode >= 500 {
@@ -491,7 +495,9 @@ func (c *TORCHClient) parseExtractionResult(responseBody []byte) ([]string, erro
 		if param.Name == "output" {
 			for _, part := range param.Part {
 				if part.Name == "url" && part.ValueURL != "" {
-					fileURLs = append(fileURLs, part.ValueURL)
+					// Normalize URL to use our configured base URL (handles Docker internal URLs)
+					normalizedURL := c.normalizeURL(part.ValueURL)
+					fileURLs = append(fileURLs, normalizedURL)
 				}
 			}
 		}
@@ -500,6 +506,45 @@ func (c *TORCHClient) parseExtractionResult(responseBody []byte) ([]string, erro
 	c.logger.Debug("Parsed extraction result", "file_count", len(fileURLs))
 
 	return fileURLs, nil
+}
+
+// normalizeURL ensures URLs use the configured base URL instead of internal Docker URLs
+// For file downloads, uses FileServerURL; for status polling, uses BaseURL
+func (c *TORCHClient) normalizeURL(rawURL string) string {
+	// Determine which base URL to use based on the URL pattern
+	baseURL := c.config.BaseURL
+
+	c.logger.Debug("URL normalization starting",
+		"raw_url", rawURL,
+		"base_url", c.config.BaseURL,
+		"file_server_url", c.config.FileServerURL)
+
+	// If URL looks like a file download (contains file extension or not a status URL), use file server URL
+	if c.config.FileServerURL != "" && !strings.Contains(rawURL, "__status") && !strings.Contains(rawURL, "$extract-data") {
+		baseURL = c.config.FileServerURL
+		c.logger.Debug("Using file server URL for download", "file_server_url", baseURL)
+	}
+
+	// If absolute URL, extract path and combine with appropriate base URL
+	if strings.HasPrefix(rawURL, "http://") || strings.HasPrefix(rawURL, "https://") {
+		parsedURL, err := url.Parse(rawURL)
+		if err != nil {
+			c.logger.Warn("Failed to parse URL, using as-is", "url", rawURL, "error", err)
+			return rawURL
+		}
+
+		// Rebuild URL with appropriate base URL host/port
+		normalizedURL := baseURL + parsedURL.Path
+		if parsedURL.RawQuery != "" {
+			normalizedURL += "?" + parsedURL.RawQuery
+		}
+
+		c.logger.Debug("Normalized URL", "original", rawURL, "normalized", normalizedURL, "base_used", baseURL)
+		return normalizedURL
+	}
+
+	// Relative URL - prepend appropriate base URL
+	return baseURL + rawURL
 }
 
 // buildBasicAuthHeader creates Basic authentication header

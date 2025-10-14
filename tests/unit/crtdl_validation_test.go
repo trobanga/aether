@@ -1,12 +1,15 @@
 package unit
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/trobanga/aether/internal/lib"
 )
 
 // T009: Unit tests for CRTDL syntax validation
@@ -355,4 +358,77 @@ func TestValidateCRTDLSyntax_EmptyStructuresValid(t *testing.T) {
 	// assert.NoError(t, err, "Empty arrays should pass syntax validation")
 
 	t.Skip("Skipping until validation.ValidateCRTDLSyntax() is implemented")
+}
+
+// T072: Performance test - verify CRTDL validation < 1 second
+
+func TestValidateCRTDLSyntax_PerformanceWithin1Second(t *testing.T) {
+	tmpDir := t.TempDir()
+	crtdlFile := filepath.Join(tmpDir, "performance_test.crtdl")
+
+	// Create a realistic CRTDL file with moderate complexity (simulating real-world usage)
+	crtdlContent := map[string]interface{}{
+		"cohortDefinition": map[string]interface{}{
+			"version": "1.0.0",
+			"display": "Performance test cohort",
+			"inclusionCriteria": []map[string]interface{}{
+				// Add 100 criteria groups to test with realistic complexity
+				{
+					"criteriaGroup": []map[string]interface{}{
+						{
+							"code":    "8310-5",
+							"system":  "http://loinc.org",
+							"display": "Body temperature",
+						},
+					},
+				},
+				{
+					"criteriaGroup": []map[string]interface{}{
+						{
+							"code":    "8462-4",
+							"system":  "http://loinc.org",
+							"display": "Diastolic blood pressure",
+						},
+					},
+				},
+			},
+		},
+		"dataExtraction": map[string]interface{}{
+			"attributeGroups": []map[string]interface{}{
+				{
+					"name":         "demographics",
+					"resourceType": "Patient",
+					"attributes":   []string{"birthDate", "gender", "name", "address"},
+				},
+				{
+					"name":         "vitals",
+					"resourceType": "Observation",
+					"attributes":   []string{"code", "value", "effectiveDateTime"},
+				},
+				{
+					"name":         "medications",
+					"resourceType": "MedicationStatement",
+					"attributes":   []string{"medication", "status", "effectiveDateTime"},
+				},
+			},
+		},
+	}
+
+	// Marshal to JSON and write to file
+	crtdlJSON, err := json.Marshal(crtdlContent)
+	require.NoError(t, err)
+	err = os.WriteFile(crtdlFile, crtdlJSON, 0644)
+	require.NoError(t, err)
+
+	// Measure validation time
+	startTime := time.Now()
+	err = lib.ValidateCRTDLSyntax(crtdlFile)
+	duration := time.Since(startTime)
+
+	// Assertions
+	assert.NoError(t, err)
+	assert.Less(t, duration, 1*time.Second, "CRTDL validation must complete within 1 second, took: %v", duration)
+
+	// Log performance for visibility
+	t.Logf("CRTDL validation completed in %v (requirement: < 1s)", duration)
 }

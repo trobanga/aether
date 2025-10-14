@@ -33,7 +33,7 @@ func TestTORCHClient_SubmitExtraction_Success(t *testing.T) {
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)
-	os.WriteFile(crtdlPath, crtdlJSON, 0644)
+	_ = os.WriteFile(crtdlPath, crtdlJSON, 0644)
 
 	// Mock TORCH server
 	var serverURL string
@@ -102,12 +102,12 @@ func TestTORCHClient_SubmitExtraction_Unauthorized(t *testing.T) {
 	tempDir := t.TempDir()
 	crtdlPath := filepath.Join(tempDir, "test.crtdl")
 	crtdlJSON := []byte(`{"cohortDefinition":{"inclusionCriteria":[]},"dataExtraction":{"attributeGroups":[]}}`)
-	os.WriteFile(crtdlPath, crtdlJSON, 0644)
+	_ = os.WriteFile(crtdlPath, crtdlJSON, 0644)
 
 	// Mock TORCH server returning 401
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Invalid credentials"))
+		_, _ = w.Write([]byte("Invalid credentials"))
 	}))
 	defer server.Close()
 
@@ -157,7 +157,7 @@ func TestTORCHClient_PollExtractionStatus_ImmediateSuccess(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 	}))
 	serverURL = server.URL
 	defer server.Close()
@@ -212,7 +212,7 @@ func TestTORCHClient_PollExtractionStatus_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"resourceType": "OperationOutcome",
 			"issue": []map[string]interface{}{
 				{
@@ -260,7 +260,7 @@ func TestTORCHClient_DownloadExtractionFiles_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/fhir+ndjson")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(ndjsonContent))
+		_, _ = w.Write([]byte(ndjsonContent))
 	}))
 	defer server.Close()
 
@@ -305,7 +305,7 @@ func TestTORCHClient_DownloadExtractionFiles_PartialFailure(t *testing.T) {
 			// First file succeeds
 			w.Header().Set("Content-Type", "application/fhir+ndjson")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"resourceType":"Patient","id":"1"}`))
+			_, _ = w.Write([]byte(`{"resourceType":"Patient","id":"1"}`))
 		} else {
 			// Second file fails
 			w.WriteHeader(http.StatusNotFound)
@@ -352,7 +352,7 @@ func TestTORCHClient_EncodeCRTDLToBase64_ValidJSON(t *testing.T) {
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)
-	os.WriteFile(crtdlPath, crtdlJSON, 0644)
+	_ = os.WriteFile(crtdlPath, crtdlJSON, 0644)
 
 	logger := lib.NewLogger(lib.LogLevelDebug)
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
@@ -423,7 +423,7 @@ func TestTORCHClient_PollExtractionStatus_ExponentialBackoff(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 	}))
 	serverURL = server.URL
 	defer server.Close()
@@ -493,4 +493,39 @@ func TestTORCHClient_Ping_Unreachable(t *testing.T) {
 	err := client.Ping()
 
 	assert.Error(t, err)
+}
+
+// T071: Performance test - verify TORCH connectivity check < 5 seconds
+
+func TestTORCHClient_Ping_PerformanceWithin5Seconds(t *testing.T) {
+	// Mock TORCH server with slight delay to simulate realistic network latency
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Simulate 100ms network latency
+		time.Sleep(100 * time.Millisecond)
+		assert.Equal(t, "GET", r.Method)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	logger := lib.NewLogger(lib.LogLevelError) // Reduce log noise for performance test
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:  server.URL,
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+
+	// Measure execution time
+	startTime := time.Now()
+	err := client.Ping()
+	duration := time.Since(startTime)
+
+	// Assertions
+	assert.NoError(t, err)
+	assert.Less(t, duration, 5*time.Second, "TORCH connectivity check must complete within 5 seconds, took: %v", duration)
+
+	// Log performance for visibility
+	t.Logf("TORCH connectivity check completed in %v (requirement: < 5s)", duration)
 }

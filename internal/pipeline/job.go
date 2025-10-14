@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -69,14 +68,6 @@ func CreateJob(inputSource string, config models.ProjectConfig, logger *lib.Logg
 	}
 
 	return job, nil
-}
-
-// determineInputType detects whether input is a local path or HTTP URL
-func determineInputType(inputSource string) models.InputType {
-	if strings.HasPrefix(inputSource, "http://") || strings.HasPrefix(inputSource, "https://") {
-		return models.InputTypeHTTP
-	}
-	return models.InputTypeLocal
 }
 
 // LoadJob loads an existing job from disk
