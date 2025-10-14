@@ -55,6 +55,19 @@ type TORCHResultPart struct {
 	ValueURL string `json:"valueUrl,omitempty"`
 }
 
+// TORCHSimpleResponse represents the simplified TORCH response format (non-FHIR)
+// This is the actual format returned by TORCH server
+type TORCHSimpleResponse struct {
+	RequiresAccessToken bool                 `json:"requiresAccessToken"`
+	Output              []TORCHSimpleOutput  `json:"output"`
+}
+
+// TORCHSimpleOutput represents a single output file in the simplified format
+type TORCHSimpleOutput struct {
+	Type string `json:"type"`
+	URL  string `json:"url"`
+}
+
 // TORCHError represents errors from TORCH operations
 type TORCHError struct {
 	Operation  string // "submit", "poll", "download"
@@ -477,42 +490,66 @@ func (c *TORCHClient) encodeCRTDLToBase64(crtdlPath string) (string, error) {
 	return encoded, nil
 }
 
-// parseExtractionResult parses FHIR Parameters response and extracts file URLs
+// parseExtractionResult parses TORCH response and extracts file URLs
+// Supports both FHIR Parameters format and TORCH's simplified format
 func (c *TORCHClient) parseExtractionResult(responseBody []byte) ([]string, error) {
 	// Log the raw response for debugging
-	c.logger.Debug("Parsing TORCH extraction result", "body_length", len(responseBody), "body", string(responseBody))
+	c.logger.Debug("Parsing TORCH extraction result", "body_length", len(responseBody))
 
 	if len(responseBody) == 0 {
 		return nil, fmt.Errorf("empty response body from TORCH server")
 	}
 
-	var result TORCHExtractionResult
-	if err := json.Unmarshal(responseBody, &result); err != nil {
+	// Try parsing as simplified TORCH format first (most common)
+	var simpleResult TORCHSimpleResponse
+	if err := json.Unmarshal(responseBody, &simpleResult); err == nil && len(simpleResult.Output) > 0 {
+		c.logger.Debug("Parsed TORCH simple format response", "file_count", len(simpleResult.Output))
+		return c.extractURLsFromSimpleFormat(simpleResult), nil
+	}
+
+	// Try parsing as FHIR Parameters format (documented format)
+	var fhirResult TORCHExtractionResult
+	if err := json.Unmarshal(responseBody, &fhirResult); err != nil {
 		return nil, fmt.Errorf("failed to parse extraction result (invalid JSON): %w. Response body: %s", err, string(responseBody))
 	}
 
-	if result.ResourceType != "Parameters" {
-		return nil, fmt.Errorf("unexpected response type: %q (expected Parameters). Response body: %s", result.ResourceType, string(responseBody))
+	if fhirResult.ResourceType == "Parameters" {
+		c.logger.Debug("Parsed FHIR Parameters format response")
+		return c.extractURLsFromFHIRFormat(fhirResult), nil
 	}
 
-	fileURLs := []string{}
+	// Neither format matched
+	return nil, fmt.Errorf("unexpected response format (expected FHIR Parameters or TORCH simple format). Response body: %s", string(responseBody))
+}
 
-	// Extract file URLs from output parameters
+// extractURLsFromSimpleFormat extracts file URLs from TORCH's simplified response format
+func (c *TORCHClient) extractURLsFromSimpleFormat(result TORCHSimpleResponse) []string {
+	fileURLs := []string{}
+	for _, output := range result.Output {
+		if output.URL != "" {
+			normalizedURL := c.normalizeURL(output.URL)
+			fileURLs = append(fileURLs, normalizedURL)
+		}
+	}
+	c.logger.Debug("Extracted URLs from simple format", "file_count", len(fileURLs))
+	return fileURLs
+}
+
+// extractURLsFromFHIRFormat extracts file URLs from FHIR Parameters format
+func (c *TORCHClient) extractURLsFromFHIRFormat(result TORCHExtractionResult) []string {
+	fileURLs := []string{}
 	for _, param := range result.Parameter {
 		if param.Name == "output" {
 			for _, part := range param.Part {
 				if part.Name == "url" && part.ValueURL != "" {
-					// Normalize URL to use our configured base URL (handles Docker internal URLs)
 					normalizedURL := c.normalizeURL(part.ValueURL)
 					fileURLs = append(fileURLs, normalizedURL)
 				}
 			}
 		}
 	}
-
-	c.logger.Debug("Parsed extraction result", "file_count", len(fileURLs))
-
-	return fileURLs, nil
+	c.logger.Debug("Extracted URLs from FHIR format", "file_count", len(fileURLs))
+	return fileURLs
 }
 
 // normalizeURL ensures URLs use the configured base URL instead of internal Docker URLs
