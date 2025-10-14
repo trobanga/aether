@@ -27,7 +27,7 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 ## Quick Start
 
 <p align="center">
-  <img src="demo-quick-start.gif" alt="Aether Quick Start Demo" width="800"/>
+  <img src="https://private-user-images.githubusercontent.com/8888869/500970240-8544ec9c-1f76-4775-9c1f-ae9f160fda2b.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjA0NDkxNjEsIm5iZiI6MTc2MDQ0ODg2MSwicGF0aCI6Ii84ODg4ODY5LzUwMDk3MDI0MC04NTQ0ZWM5Yy0xZjc2LTQ3NzUtOWMxZi1hZTlmMTYwZmRhMmIuZ2lmP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MTAxNCUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTEwMTRUMTMzNDIxWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YjcwYTE3YWNlYmY2NDY0NWE0YzVmODliMjJlOTRiMmExOWRiMmFjZjJjMjNjZGRiMmNkZTZiYzQ1OWYyZTI0ZiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.XP8HJwLZJwhDP24SjPy660GWEzIzStZbGawitHO3nBA" alt="Aether Quick Start Demo" width="800"/>
 </p>
 
 ### Installation
