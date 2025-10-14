@@ -40,7 +40,7 @@ Quick Start:
        cp config/aether.example.yaml aether.yaml
 
   2. Start a pipeline:
-       aether pipeline start --input /data/torch/output
+       aether pipeline start /data/torch/output
 
   3. Check status:
        aether pipeline status <job-id>

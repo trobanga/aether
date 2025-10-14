@@ -61,17 +61,17 @@ cp config/aether.example.yaml aether.yaml
 
 **2. Start a pipeline:**
 ```bash
+# From CRTDL file (TORCH extraction)
+aether pipeline start query.crtdl
+
 # From local directory
-aether pipeline start --input /path/to/torch/output
+aether pipeline start /path/to/fhir/data
 
 # From HTTP URL
-aether pipeline start --input https://example.com/fhir/export/job-123
-
-# From CRTDL file (TORCH extraction)
-aether pipeline start --input /path/to/query.crtdl
+aether pipeline start https://example.com/fhir/Patient.ndjson
 
 # From TORCH result URL (reuse existing extraction)
-aether pipeline start --input http://localhost:8080/fhir/result/abc123
+aether pipeline start http://torch-server/fhir/extraction/result-123
 ```
 
 **3. Monitor progress:**
@@ -102,7 +102,7 @@ TORCH is a FHIR-based data extraction service that allows researchers to define 
 
 1. **CRTDL File Extraction** (recommended for new queries):
    ```bash
-   aether pipeline start --input /path/to/cohort-query.crtdl
+   aether pipeline start cohort-query.crtdl
    ```
    - Submits CRTDL to TORCH server
    - Polls extraction status until complete
@@ -111,7 +111,7 @@ TORCH is a FHIR-based data extraction service that allows researchers to define 
 
 2. **TORCH Result URL** (for reusing existing extractions):
    ```bash
-   aether pipeline start --input http://localhost:8080/fhir/result/abc123
+   aether pipeline start http://localhost:8080/fhir/result/abc123
    ```
    - Skips extraction submission
    - Downloads files directly from result URL
@@ -151,8 +151,8 @@ See [TORCH quickstart](specs/002-import-via-torch/quickstart.md) for examples an
 Existing workflows using local directories or HTTP URLs continue to work without changes:
 ```bash
 # Still supported
-aether pipeline start --input ./test-data/
-aether pipeline start --input https://example.com/fhir/export
+aether pipeline start ./test-data/
+aether pipeline start https://example.com/fhir/export
 ```
 
 ## Architecture
