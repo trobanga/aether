@@ -7,7 +7,7 @@
 A command-line interface for orchestrating Data Use Process (DUP) pipelines for medical FHIR data.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.21%2B-00ADD8?logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go)](https://go.dev/)
 
 ## Overview
 
@@ -26,7 +26,9 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 
 ## Quick Start
 
-![Aether Quick Start Demo](demo-quick-start.gif)
+<p align="center">
+  <img src="demo-quick-start.gif" alt="Aether Quick Start Demo" width="800"/>
+</p>
 
 ### Installation
 
