@@ -39,31 +39,19 @@ jobs:
         run: make test-unit
 
       - name: Generate coverage report
-        run: make coverage
+        run: go test -coverprofile=coverage.txt ./...
 
-      - name: Upload coverage to Coveralls
-        run: |
-          go install github.com/mattn/goveralls@latest
-          goveralls -coverprofile=coverage.out -service=github
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload test results and coverage
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          name: unit-test-results-${{ github.run_id }}
-          path: |
-            coverage.out
-            coverage.html
-          retention-days: 90
-          if-no-files-found: ignore
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: trobanga/aether
 
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [unit-test]
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -74,37 +62,8 @@ jobs:
           go-version: '1.25.2'
           cache: true
 
-      - name: Download test data
-        working-directory: .github/test/torch
-        run: ./download-testdata.sh
-
-      - name: Start Docker services
-        working-directory: .github/test
-        run: docker compose up -d
-
-      - name: Wait for services to be healthy
-        run: |
-          timeout 60 bash -c 'until docker compose -f .github/test/compose.yaml ps | grep -q "healthy"; do
-            echo "Waiting for services to be healthy..."
-            sleep 2
-          done' || {
-            echo "Services failed to become healthy within 60 seconds"
-            docker compose -f .github/test/compose.yaml ps
-            docker compose -f .github/test/compose.yaml logs
-            exit 2
-          }
-
-      - name: Fix torch output directory permissions
-        run: |
-          docker compose -f .github/test/compose.yaml exec -T --user=root torch chown -R 1001:1001 /app/output
-
       - name: Run integration tests
         run: make test-integration
-
-      - name: Capture service logs on failure
-        if: failure()
-        run: |
-          docker compose -f .github/test/compose.yaml logs > docker-logs-integration.txt
 
       - name: Upload integration test results
         if: always()
@@ -115,18 +74,6 @@ jobs:
             test-results-integration.json
           retention-days: 30
           if-no-files-found: ignore
-
-      - name: Upload service logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-logs-integration-${{ github.run_id }}
-          path: docker-logs-integration.txt
-          retention-days: 7
-
-      - name: Cleanup Docker services
-        if: always()
-        run: docker compose -f .github/test/compose.yaml down -v
 
   e2e-test:
     name: E2E Tests
