@@ -36,7 +36,7 @@ jobs:
           cache: true
 
       - name: Run tests with coverage
-        run: go test -coverpkg=./internal/...,./cmd/... -coverprofile=coverage.txt ./tests/...
+        run: go test -coverpkg=./internal/... -coverprofile=coverage.txt ./tests/...
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
