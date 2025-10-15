@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -90,8 +91,11 @@ func LogOperation(logger *Logger, operation string, fn func() error) error {
 
 // LogRetry logs retry attempts
 func LogRetry(logger *Logger, operation string, attempt int, maxAttempts int, err error) {
+	// Remove line breaks from operation to prevent log spoofing
+	safeOperation := strings.ReplaceAll(operation, "\n", "")
+	safeOperation = strings.ReplaceAll(safeOperation, "\r", "")
 	logger.Warn(
-		fmt.Sprintf("Retry attempt %d/%d for: %s", attempt+1, maxAttempts, operation),
+		fmt.Sprintf("Retry attempt %d/%d for: %s", attempt+1, maxAttempts, safeOperation),
 		"error", err,
 	)
 }
