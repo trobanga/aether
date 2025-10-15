@@ -116,7 +116,7 @@ test-contract:
 ## coverage: Run tests with coverage report
 coverage:
 	@echo "Running tests with coverage..."
-	$(GOTEST) -cover -coverprofile=coverage.out ./...
+	$(GOTEST) -coverpkg=./internal/...,./cmd/... -coverprofile=coverage.out ./tests/...
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 

@@ -8,6 +8,7 @@ A command-line interface for orchestrating Data Use Process (DUP) pipelines for 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go)](https://go.dev/)
+[![codecov](https://codecov.io/gh/trobanga/aether/branch/main/graph/badge.svg)](https://codecov.io/gh/trobanga/aether)
 
 ## Overview
 
@@ -385,7 +386,7 @@ See `specs/*/tasks.md` for detailed implementation tracking.
 
 Contributions welcome! Please ensure:
 
-1. **Tests first**: Write failing tests before implementation (TDD)
+1. **Test**: All new code must be covered by tests
 2. **Functional style**: Prefer immutability and pure functions
 3. **Keep it simple**: Justify any added complexity
 4. **Code review**: All changes go through pull request review
