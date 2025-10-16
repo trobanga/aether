@@ -191,6 +191,10 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 
 	// Process line by line
 	scanner := bufio.NewScanner(inFile)
+	// Increase buffer to 10MB to handle large FHIR resources (default is 64KB)
+	// This prevents "token too long" errors when processing large Bundles or resources
+	buf := make([]byte, 0, 10*1024*1024)
+	scanner.Buffer(buf, 10*1024*1024)
 	resourcesProcessed := 0
 
 	for scanner.Scan() {
@@ -303,6 +307,9 @@ func countResourcesInFile(filename string) int {
 
 	count := 0
 	scanner := bufio.NewScanner(file)
+	// Increase buffer to 10MB to handle large FHIR resources (default is 64KB)
+	buf := make([]byte, 0, 10*1024*1024)
+	scanner.Buffer(buf, 10*1024*1024)
 	for scanner.Scan() {
 		if strings.TrimSpace(scanner.Text()) != "" {
 			count++

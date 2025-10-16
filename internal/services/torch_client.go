@@ -58,8 +58,8 @@ type TORCHResultPart struct {
 // TORCHSimpleResponse represents the simplified TORCH response format (non-FHIR)
 // This is the actual format returned by TORCH server
 type TORCHSimpleResponse struct {
-	RequiresAccessToken bool                 `json:"requiresAccessToken"`
-	Output              []TORCHSimpleOutput  `json:"output"`
+	RequiresAccessToken bool                `json:"requiresAccessToken"`
+	Output              []TORCHSimpleOutput `json:"output"`
 }
 
 // TORCHSimpleOutput represents a single output file in the simplified format
