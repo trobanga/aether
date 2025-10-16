@@ -1,7 +1,7 @@
 # Makefile for Aether Test Infrastructure
 # Located in .github/test/
 
-.PHONY: help services dimp-up dimp-down dimp-test test-with-services clean-test-data
+.PHONY: help services start stop torch-up torch-down torch-logs torch-test dimp-up dimp-down dimp-test test-with-services download-testdata upload-testdata e2e-test clean-test-data
 
 # Default target
 .DEFAULT_GOAL := help
@@ -13,19 +13,76 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Available Services:"
-	@echo "  dimp              DIMP pseudonymization service (http://localhost:8083)"
+	@echo "  torch             TORCH data extraction service"
+	@echo "  dimp              DIMP pseudonymization service"
 	@echo ""
 	@echo "Targets:"
+	@echo "  start             Start all services (TORCH + DIMP)"
+	@echo "  stop              Stop all services"
+	@echo "  torch-up          Start TORCH test service"
+	@echo "  torch-down        Stop TORCH test service"
+	@echo "  torch-logs        Show TORCH service logs"
+	@echo "  torch-test        Test TORCH extraction (requires running services)"
 	@echo "  dimp-up           Start DIMP test service"
 	@echo "  dimp-down         Stop DIMP test service"
 	@echo "  dimp-logs         Show DIMP service logs"
 	@echo "  dimp-restart      Restart DIMP service"
 	@echo "  dimp-test         Run integration tests with DIMP service"
 	@echo "  test-with-services Run all tests with required services"
+	@echo "  download-testdata Download test data (only if not present)"
+	@echo "  upload-testdata   Upload test data to TORCH (requires services)"
+	@echo "  e2e-test          Run end-to-end test (downloads, uploads, runs pipeline)"
 	@echo "  clean-test-data   Clean test data and temporary files"
 
 ## services: Alias for help
 services: help
+
+## start: Start all services (TORCH + DIMP)
+start:
+	@echo "Starting all test services..."
+	@docker compose up --wait
+	@echo "✓ All services started"
+	@echo ""
+	@echo "Services running:"
+	@echo "  TORCH: Check port with 'docker compose port torch 8080'"
+	@echo "  DIMP:  http://localhost:8083/fhir"
+
+## stop: Stop all services
+stop:
+	@echo "Stopping all test services..."
+	@docker compose down
+	@echo "✓ All services stopped"
+
+## torch-up: Start TORCH test service
+torch-up:
+	@echo "Starting TORCH test service..."
+	@docker compose up -d torch torch_db
+	@echo "✓ TORCH service started"
+	@echo ""
+	@echo "Get TORCH port:"
+	@echo "  docker compose port torch 8080"
+
+## torch-down: Stop TORCH test service
+torch-down:
+	@echo "Stopping TORCH test service..."
+	@docker compose stop torch torch_db
+	@echo "✓ TORCH service stopped"
+
+## torch-logs: Show TORCH service logs
+torch-logs:
+	@echo "Showing TORCH service logs..."
+	@docker compose logs -f torch
+
+## torch-test: Test TORCH extraction (requires running services)
+torch-test:
+	@echo "Testing TORCH extraction..."
+	@if ! docker compose ps torch | grep -q "Up"; then \
+		echo "Error: TORCH service is not running. Start it with 'make torch-up' or 'make start'"; \
+		exit 1; \
+	fi
+	@echo "Executing CRTDL query..."
+	@cd .. && ./scripts/execute-crtdl.sh
+	@echo "✓ TORCH extraction test complete"
 
 ## dimp-up: Start DIMP test service
 dimp-up:
@@ -76,8 +133,43 @@ test-with-services:
 	@cd dimp && docker compose down
 	@echo "✓ All tests complete"
 
+## download-testdata: Download test data (only if not present)
+download-testdata:
+	@if [ -d "torch/testdata" ] && [ -n "$$(ls -A torch/testdata 2>/dev/null)" ]; then \
+		echo "Test data already exists in torch/testdata, skipping download"; \
+		echo "To force re-download, run: rm -rf torch/testdata && make download-testdata"; \
+	else \
+		echo "Downloading test data..."; \
+		../scripts/download-testdata.sh; \
+		echo "✓ Test data downloaded to torch/testdata"; \
+	fi
+
+## upload-testdata: Upload test data to TORCH (requires services)
+upload-testdata: download-testdata
+	@echo "Uploading test data to TORCH..."
+	@if ! docker compose ps torch-hds | grep -q "Up"; then \
+		echo "Error: TORCH services are not running. Start them with 'make start'"; \
+		exit 1; \
+	fi
+	../scripts/upload-testdata.sh
+	@echo "✓ Test data uploaded to TORCH"
+
+## e2e-test: Run end-to-end test (downloads, uploads, runs pipeline)
+e2e-test: download-testdata
+	@echo "Running end-to-end test..."
+	@if ! docker compose ps | grep -q "Up"; then \
+		echo "Starting all services..."; \
+		docker compose up --wait; \
+	fi
+	@echo "Uploading test data..."
+	@cd .. && ./scripts/upload-testdata.sh
+	@echo "Running E2E test script..."
+	../scripts/run-e2e-test.sh
+	@echo "✓ End-to-end test complete"
+
 ## clean-test-data: Clean test data and temporary files
 clean-test-data:
 	@echo "Cleaning test data..."
 	@rm -rf ../../jobs/*
+	@rm -rf torch/testdata
 	@echo "✓ Test data cleaned"
