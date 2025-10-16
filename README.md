@@ -10,6 +10,27 @@ A command-line interface for orchestrating Data Use Process (DUP) pipelines for 
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go)](https://go.dev/)
 [![codecov](https://codecov.io/gh/trobanga/aether/branch/main/graph/badge.svg)](https://codecov.io/gh/trobanga/aether)
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+  - [For End Users](#for-end-users)
+  - [For Developers](#for-developers)
+- [Common Use Cases](#common-use-cases)
+- [TORCH Integration](#torch-integration)
+- [Architecture](#architecture)
+- [Configuration](#configuration)
+- [Development](#development)
+  - [Architecture & Testing Strategy](#architecture--testing-strategy)
+  - [Advanced Development Tasks](#advanced-development-tasks)
+  - [Contributing Workflow](#contributing-workflow)
+- [Design Principles](#design-principles)
+- [Documentation](#documentation)
+- [Roadmap](#roadmap)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Overview
 
 Aether is a CLI tool designed for medical researchers and data engineers to process FHIR (Fast Healthcare Interoperability Resources) data through configurable pipeline steps. It provides session-independent job management, automatic retry mechanisms, and real-time progress tracking.
@@ -31,9 +52,16 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
   <img src="https://private-user-images.githubusercontent.com/8888869/500970240-8544ec9c-1f76-4775-9c1f-ae9f160fda2b.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjA0NDkxNjEsIm5iZiI6MTc2MDQ0ODg2MSwicGF0aCI6Ii84ODg4ODY5LzUwMDk3MDI0MC04NTQ0ZWM5Yy0xZjc2LTQ3NzUtOWMxZi1hZTlmMTYwZmRhMmIuZ2lmP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MTAxNCUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTEwMTRUMTMzNDIxWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YjcwYTE3YWNlYmY2NDY0NWE0YzVmODliMjJlOTRiMmExOWRiMmFjZjJjMjNjZGRiMmNkZTZiYzQ1OWYyZTI0ZiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.XP8HJwLZJwhDP24SjPy660GWEzIzStZbGawitHO3nBA" alt="Aether Quick Start Demo" width="800"/>
 </p>
 
-### Installation
+### For End Users
 
-**From source:**
+**Prerequisites:**
+- Go 1.21 or later (for building from source)
+- Optional: TORCH server access (for FHIR data extraction)
+- Optional: DIMP service (for pseudonymization)
+
+**1. Install Aether:**
+
+From source:
 ```bash
 git clone https://github.com/trobanga/aether.git
 cd aether
@@ -41,56 +69,277 @@ make build
 sudo make install  # installs to /usr/local/bin
 ```
 
-**Alternative: Install to user directory (no sudo):**
+Without sudo (installs to `~/.local/bin`):
 ```bash
 make build
-make install-local  # installs to ~/.local/bin
+make install-local
+# Ensure ~/.local/bin is in your PATH
 ```
 
-**Verify installation:**
+Verify installation:
 ```bash
 aether --help
 ```
 
-### Basic Usage
+**Optional: Install shell completions:**
 
-**1. Create configuration:**
+For oh-my-zsh users:
 ```bash
+# Automatic installation
+./scripts/install-completions.sh
+
+# Or manual installation
+mkdir -p ~/.oh-my-zsh/custom/plugins/aether
+aether completion zsh > ~/.oh-my-zsh/custom/plugins/aether/_aether
+# Add 'aether' to plugins array in ~/.zshrc: plugins=(... aether)
+# Then: exec zsh
+```
+
+For other shells (bash, fish, or standard zsh):
+```bash
+# Automatic installation
+./scripts/install-completions.sh
+
+# Or see manual instructions
+aether completion --help
+```
+
+**2. Create minimal configuration:**
+
+```bash
+# Copy example config
 cp config/aether.example.yaml aether.yaml
-# Edit aether.yaml to configure services and enabled steps
 ```
 
-**2. Start a pipeline:**
-```bash
-# From CRTDL file (TORCH extraction)
-aether pipeline start query.crtdl
+For basic local testing (no external services), edit `aether.yaml`:
+```yaml
+pipeline:
+  enabled_steps:
+    - import  # Only enable import step
 
-# From local directory
-aether pipeline start /path/to/fhir/data
-
-# From HTTP URL
-aether pipeline start https://example.com/fhir/Patient.ndjson
-
-# From TORCH result URL (reuse existing extraction)
-aether pipeline start http://torch-server/fhir/extraction/result-123
+jobs_dir: "./jobs"
 ```
 
-**3. Monitor progress:**
+**3. Run your first pipeline:**
+
+Process local FHIR data:
 ```bash
+# Create test data directory
+mkdir -p test-data
+
+# Start pipeline (will create a job ID)
+aether pipeline start ./test-data/
+
+# Monitor progress
 aether pipeline status <job-id>
-```
 
-**4. List all jobs:**
-```bash
+# List all jobs
 aether job list
 ```
 
-**5. Resume a failed pipeline:**
-```bash
-aether pipeline continue <job-id>
+**4. Enable TORCH integration (optional):**
+
+Add to `aether.yaml`:
+```yaml
+services:
+  torch:
+    base_url: "http://localhost:8080"
+    username: "your-username"
+    password: "your-password"
 ```
 
-See the [Quickstart Guide](specs/001-dup-pipeline-we/quickstart.md) for detailed usage instructions.
+Then run with CRTDL file:
+```bash
+aether pipeline start query.crtdl
+```
+
+**Need help?** See the [Quickstart Guide](specs/001-dup-pipeline-we/quickstart.md) for detailed usage instructions.
+
+### For Developers
+
+**Prerequisites:**
+- Go 1.21+ ([download](https://go.dev/dl/))
+- Make
+- Docker & Docker Compose (for integration tests)
+- Git
+
+**1. Clone and setup:**
+
+```bash
+git clone https://github.com/trobanga/aether.git
+cd aether
+
+# Install dependencies and build
+make build
+
+# Run tests to verify setup
+make test
+```
+
+**2. Run with test environment:**
+
+```bash
+# Start TORCH and DIMP test services
+cd .github/test
+make services-up
+
+# In another terminal, build and test
+cd ../..
+make build
+./bin/aether pipeline start .github/test/torch/queries/example-crtdl.json
+
+# Monitor the pipeline
+./bin/aether job list
+./bin/aether pipeline status <job-id>
+
+# Stop services when done
+cd .github/test
+make services-down
+```
+
+**3. Development workflow:**
+
+```bash
+# Run tests continuously during development
+make test
+
+# Run specific test suites
+make test-unit           # Unit tests only
+make test-integration    # Integration tests
+make test-contract       # API contract tests
+
+# Check code coverage
+make coverage
+
+# Format and lint
+make check
+
+# Build for multiple platforms
+make build-all
+```
+
+**4. Project structure:**
+
+```
+aether/
+├── cmd/                 # CLI commands (pipeline, job)
+├── internal/
+│   ├── models/          # Domain models (Job, Step, Config)
+│   ├── pipeline/        # Pipeline orchestration logic
+│   ├── services/        # External services (I/O, HTTP)
+│   └── ui/              # Progress indicators
+├── .github/test/        # Test infrastructure & Docker Compose
+├── config/              # Example configurations
+├── specs/               # Feature specifications
+└── Makefile             # Build and test targets
+```
+
+**5. Common tasks:**
+
+```bash
+# Add a new pipeline step
+# 1. Add step logic in internal/pipeline/
+# 2. Add tests in internal/pipeline/*_test.go
+# 3. Update internal/models/step.go if needed
+# 4. Run: make test
+
+# Debug a failing test
+go test -v ./internal/pipeline/... -run TestSpecificTest
+
+# Profile the application
+go test -cpuprofile=cpu.prof -memprofile=mem.prof ./...
+go tool pprof cpu.prof
+```
+
+**6. Troubleshooting:**
+
+| Issue | Solution |
+|-------|----------|
+| `make: command not found` | Install Make: `sudo apt install make` (Ubuntu) or `brew install make` (macOS) |
+| Tests fail with "connection refused" | Ensure test services are running: `cd .github/test && make services-up` |
+| `go: version 1.21 required` | Update Go: [https://go.dev/dl/](https://go.dev/dl/) |
+| Import tests fail | Check `jobs_dir` exists and has write permissions |
+
+**Need more details?** See [Development](#development) section below and [CLAUDE.md](CLAUDE.md) for coding guidelines.
+
+## Common Use Cases
+
+### 1. Local FHIR Data Processing
+**Scenario:** You have FHIR NDJSON files on disk and want to pseudonymize them.
+
+```bash
+# Configure only the steps you need
+# aether.yaml:
+pipeline:
+  enabled_steps:
+    - import
+    - dimp
+
+services:
+  dimp_url: "http://localhost:8083/fhir"
+
+# Run pipeline
+aether pipeline start /path/to/fhir/files/
+```
+
+### 2. TORCH Cohort Extraction
+**Scenario:** Extract patient cohort from TORCH using a CRTDL query.
+
+```bash
+# Configure TORCH credentials
+# aether.yaml:
+services:
+  torch:
+    base_url: "http://torch.hospital.org"
+    username: "researcher"
+    password: "secret"
+
+pipeline:
+  enabled_steps:
+    - import  # Automatically handles TORCH extraction
+
+# Submit CRTDL query
+aether pipeline start cohort-definition.crtdl
+```
+
+### 3. Reprocess Existing TORCH Results
+**Scenario:** Re-run pipeline on previously extracted TORCH data.
+
+```bash
+# Use TORCH result URL instead of CRTDL
+aether pipeline start http://torch.hospital.org/fhir/result/abc-123
+
+# Or download and process locally
+curl http://torch.hospital.org/fhir/result/abc-123 -o results/
+aether pipeline start ./results/
+```
+
+### 4. HTTP Data Import
+**Scenario:** Process FHIR data from a web endpoint.
+
+```bash
+# Direct URL import
+aether pipeline start https://fhir.server.org/export/Patient.ndjson
+
+# Multiple resources (start multiple jobs)
+aether pipeline start https://fhir.server.org/export/Observation.ndjson
+aether pipeline start https://fhir.server.org/export/Condition.ndjson
+```
+
+### 5. Development & Testing
+**Scenario:** Test pipeline changes with mock services.
+
+```bash
+# Start test environment
+cd .github/test && make services-up
+
+# Build and test
+make build
+./bin/aether pipeline start .github/test/torch/queries/example-crtdl.json
+
+# Watch logs
+./bin/aether pipeline status <job-id> --follow
+```
 
 ### TORCH Integration
 
@@ -270,62 +519,134 @@ jobs_dir: "./jobs"
 
 ## Development
 
-### Prerequisites
+### Architecture & Testing Strategy
 
-- Go 1.21 or later
-- Docker (for DIMP test service)
+**Core Principles:**
+1. **Functional Programming**: Immutable data, pure functions, explicit side effects
+2. **Test-Driven Development**: Red-Green-Refactor cycle
+3. **KISS**: Single binary, file-based state, standard library-first
 
-### Building
-
-```bash
-# Build for current platform
-make build
-
-# Cross-compile for all platforms
-make build-all
-
-# Build for specific platform
-make build-linux      # Linux amd64
-make build-mac        # macOS amd64
-make build-mac-arm    # macOS arm64 (M1/M2)
+**Test Pyramid:**
+```
+         /\
+        /  \  Contract Tests (API specs)
+       /────\
+      /      \  Integration Tests (with services)
+     /────────\
+    /          \  Unit Tests (pure functions)
+   /────────────\
 ```
 
-### Testing
+### Advanced Development Tasks
 
+**Cross-platform builds:**
 ```bash
-# Run all tests
-make test
-
-# Run specific test suites
-make test-unit
-make test-integration
-make test-contract
-
-# Run with coverage report
-make coverage
-
-# Format code and run checks
-make check
+make build-all           # All platforms
+make build-linux         # Linux amd64
+make build-mac           # macOS amd64
+make build-mac-arm       # macOS arm64 (M1/M2)
 ```
 
-### Running Tests with DIMP Service
-
+**Service-specific testing:**
 ```bash
-# Start DIMP test service
+# Test DIMP integration only
 cd .github/test
 make dimp-up
-
-# Run DIMP integration tests
 make dimp-test
-
-# Stop service
 make dimp-down
 
-# Or run all tests with services in one command
+# Test TORCH integration only
+make torch-up
+make torch-test
+make torch-down
+
+# Run all integration tests with services
 make test-with-services
 ```
 
-See `.github/test/Makefile` for all test infrastructure targets.
+**Debugging techniques:**
+```bash
+# Enable verbose logging
+AETHER_LOG_LEVEL=debug ./bin/aether pipeline start test.crtdl
+
+# Run specific test with verbose output
+go test -v -run TestImportStep ./internal/pipeline/
+
+# Profile memory usage
+go test -memprofile=mem.prof ./internal/pipeline/
+go tool pprof -http=:8080 mem.prof
+
+# Check for race conditions
+go test -race ./...
+```
+
+**Local end-to-end testing:**
+
+See [`.github/test/README.md`](.github/test/README.md) for:
+- Complete Docker Compose environment (TORCH + DIMP)
+- Sample CRTDL queries and test data
+- Step-by-step E2E workflow
+- Service configuration examples
+
+### Contributing Workflow
+
+**1. Before starting:**
+```bash
+# Ensure clean state
+git checkout main
+git pull origin main
+make test  # All tests should pass
+```
+
+**2. Create feature branch:**
+```bash
+git checkout -b feature/your-feature-name
+```
+
+**3. TDD cycle:**
+```bash
+# 1. Write failing test
+vim internal/pipeline/your_feature_test.go
+
+# 2. Run test (should fail - RED)
+go test -v ./internal/pipeline/ -run TestYourFeature
+
+# 3. Implement minimum code to pass
+vim internal/pipeline/your_feature.go
+
+# 4. Run test (should pass - GREEN)
+go test -v ./internal/pipeline/ -run TestYourFeature
+
+# 5. Refactor and ensure tests still pass
+make test
+```
+
+**4. Pre-commit checks:**
+```bash
+make check      # Format and lint
+make coverage   # Ensure coverage doesn't drop
+make test       # All tests pass
+```
+
+**5. Commit and push:**
+```bash
+git add .
+git commit -m "feat: add your feature description"
+git push origin feature/your-feature-name
+```
+
+**6. Create pull request:**
+- Ensure CI passes
+- Request review from maintainers
+- Address review comments
+
+**Code review checklist:**
+- [ ] Tests written first (TDD)
+- [ ] All tests pass
+- [ ] Code coverage maintained or improved
+- [ ] Follows functional programming principles
+- [ ] Documentation updated (if needed)
+- [ ] No external dependencies added unnecessarily
 
 ## Design Principles
 
@@ -349,6 +670,9 @@ Aether follows three core principles defined in the [project constitution](.spec
 - External services handle domain complexity
 
 ## Documentation
+
+### User Guides
+- **[Shell Completions](docs/shell-completions.md)**: Install and configure tab completion for bash, zsh, fish
 
 ### Core Pipeline (001-dup-pipeline-we)
 - **[Feature Specification](specs/001-dup-pipeline-we/spec.md)**: Complete functional requirements
@@ -382,16 +706,103 @@ Aether follows three core principles defined in the [project constitution](.spec
 
 See `specs/*/tasks.md` for detailed implementation tracking.
 
+## FAQ
+
+### General
+
+**Q: Can I run Aether without external services?**
+A: Yes! Configure only the `import` step in `pipeline.enabled_steps` to process local FHIR files without any external dependencies.
+
+**Q: Where is job data stored?**
+A: Jobs are stored in the `jobs_dir` directory (default: `./jobs/`) as JSON state files. Each job gets a UUID subdirectory containing state and processed data.
+
+**Q: Can I run multiple pipelines in parallel?**
+A: Yes, but not on the same job. Each job has a file lock to prevent corruption. You can run multiple jobs simultaneously on different data sources.
+
+**Q: How do I resume a failed pipeline?**
+A: Use `aether pipeline continue <job-id>`. The pipeline will resume from the last completed step using the file-based state.
+
+**Q: What happens if I lose connection to external services?**
+A: Aether uses a hybrid retry strategy: automatic retries for transient errors (network issues), manual intervention for validation failures. Check job status and retry with `pipeline continue`.
+
+### TORCH Integration
+
+**Q: What is CRTDL?**
+A: Cohort Representation for Trial Data Linking - a JSON format for defining patient cohorts and data extraction requirements in TORCH.
+
+**Q: Can I reuse TORCH extractions?**
+A: Yes! Use the TORCH result URL: `aether pipeline start http://torch-server/fhir/result/abc-123`
+
+**Q: How long do TORCH extractions take?**
+A: Depends on cohort size. Aether polls every 5 seconds (configurable) with a default 30-minute timeout. Large cohorts may need a higher timeout in config.
+
+**Q: What if my TORCH credentials are wrong?**
+A: Aether fails early with a clear authentication error. Check your `aether.yaml` credentials and TORCH server URL.
+
+### Development
+
+**Q: How do I add a new pipeline step?**
+A: Follow TDD:
+1. Add test in `internal/pipeline/*_test.go`
+2. Implement in `internal/pipeline/*.go`
+3. Update `internal/models/step.go` with new step type
+4. Add step to example config
+
+**Q: Why are tests failing with "connection refused"?**
+A: Integration tests need running services. Run `cd .github/test && make services-up` before testing.
+
+**Q: How do I debug a specific test?**
+A: Use `go test -v ./internal/pipeline/... -run TestSpecificName` for verbose output on a single test.
+
+**Q: Can I contribute without knowing Go?**
+A: You can help with documentation, testing, and bug reports. For code contributions, basic Go knowledge is needed, but we welcome learning developers!
+
+**Q: What's the difference between unit and integration tests?**
+A:
+- **Unit tests**: Test pure functions in isolation (no I/O, no external services)
+- **Integration tests**: Test with real services (TORCH, DIMP) via Docker Compose
+- **Contract tests**: Verify HTTP API specifications match implementation
+
+**Q: How do I run tests without Docker?**
+A: Run only unit tests: `go test ./internal/models/ ./internal/lib/`. Integration tests require Docker.
+
+### Configuration
+
+**Q: Can I use environment variables for secrets?**
+A: Not directly in current version. Recommended: Use file permissions to protect `aether.yaml` (chmod 600) or mount secrets in containerized deployments.
+
+**Q: What's the minimal configuration?**
+A:
+```yaml
+pipeline:
+  enabled_steps:
+    - import
+jobs_dir: "./jobs"
+```
+
+**Q: How do I change the polling interval for TORCH?**
+A: Add to `aether.yaml`:
+```yaml
+services:
+  torch:
+    polling_interval_seconds: 10  # Default: 5
+```
+
+**Q: Can I disable progress bars?**
+A: Not currently configurable, but progress output is automatically disabled in non-TTY environments (e.g., CI pipelines, log files).
+
 ## Contributing
 
-Contributions welcome! Please ensure:
+Contributions welcome! Please follow the [Contributing Workflow](#contributing-workflow) in the Development section.
 
-1. **Test**: All new code must be covered by tests
-2. **Functional style**: Prefer immutability and pure functions
-3. **Keep it simple**: Justify any added complexity
-4. **Code review**: All changes go through pull request review
+**Quick checklist:**
+- ✅ Tests written first (TDD approach)
+- ✅ All tests pass (`make test`)
+- ✅ Code coverage maintained (`make coverage`)
+- ✅ Follows functional programming principles (immutability, pure functions)
+- ✅ No unnecessary external dependencies
 
-See [CLAUDE.md](CLAUDE.md) for development guidelines.
+See [CLAUDE.md](CLAUDE.md) for detailed coding guidelines and [Development](#development) for the full workflow.
 
 ## License
 

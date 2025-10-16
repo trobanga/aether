@@ -161,6 +161,11 @@ install-local: build
 	@echo "Install complete. Ensure ~/.local/bin is in your PATH."
 	@echo "Run '$(BINARY_NAME) --help' to get started."
 
+## install-completions: Install shell completions (bash, zsh, fish)
+install-completions: build
+	@echo "Installing shell completions..."
+	./scripts/install-completions.sh
+
 ## deps: Download and tidy dependencies
 deps:
 	@echo "Downloading dependencies..."

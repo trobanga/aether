@@ -4,6 +4,9 @@ This directory contains a Docker Compose setup for testing the Aether pipeline w
 
 ## Services
 
+### Data Extraction
+- **Torch**: Used for extracting FHIR data from source systems. Torch handles the initial data retrieval and conversion to NDJSON format.
+
 ### DIMP Stack
 The DIMP stack includes:
 - **vfps_db**: PostgreSQL database for VFPS (Version-independent FHIR Pseudonymization Service)
