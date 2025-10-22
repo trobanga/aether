@@ -14,7 +14,7 @@ import (
 )
 
 // TestStatePersistence_SaveAndLoad tests the complete save/load cycle
-// This is T040: Unit test for state persistence (save/load cycle)
+// Unit test for state persistence (save/load cycle)
 func TestStatePersistence_SaveAndLoad(t *testing.T) {
 	// Setup: Create temporary jobs directory
 	tempDir := t.TempDir()

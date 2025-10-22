@@ -13,17 +13,17 @@ import (
 	"github.com/trobanga/aether/internal/services"
 )
 
-// T053: Unit test for DIMP client with success response
+// Unit test for DIMP client with success response
 
 func TestDIMPClient_Pseudonymize_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var resource map[string]interface{}
+		var resource map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&resource)
 
 		// Return pseudonymized version
 		resource["id"] = "pseudonym-123"
-		if names, ok := resource["name"].([]interface{}); ok && len(names) > 0 {
-			if nameMap, ok := names[0].(map[string]interface{}); ok {
+		if names, ok := resource["name"].([]any); ok && len(names) > 0 {
+			if nameMap, ok := names[0].(map[string]any); ok {
 				nameMap["family"] = "REDACTED"
 			}
 		}
@@ -38,10 +38,10 @@ func TestDIMPClient_Pseudonymize_Success(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	originalPatient := map[string]interface{}{
+	originalPatient := map[string]any{
 		"resourceType": "Patient",
 		"id":           "original-123",
-		"name": []map[string]interface{}{
+		"name": []map[string]any{
 			{"family": "Smith", "given": []string{"John"}},
 		},
 	}
@@ -51,7 +51,7 @@ func TestDIMPClient_Pseudonymize_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Patient", result["resourceType"])
 	assert.Equal(t, "pseudonym-123", result["id"])
-	assert.Equal(t, "REDACTED", result["name"].([]interface{})[0].(map[string]interface{})["family"])
+	assert.Equal(t, "REDACTED", result["name"].([]any)[0].(map[string]any)["family"])
 }
 
 func TestDIMPClient_Pseudonymize_PreservesResourceType(t *testing.T) {
@@ -68,7 +68,7 @@ func TestDIMPClient_Pseudonymize_PreservesResourceType(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				var resource map[string]interface{}
+				var resource map[string]any
 				_ = json.NewDecoder(r.Body).Decode(&resource)
 
 				// Return pseudonymized version with same resourceType
@@ -84,7 +84,7 @@ func TestDIMPClient_Pseudonymize_PreservesResourceType(t *testing.T) {
 			httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 			client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-			original := map[string]interface{}{
+			original := map[string]any{
 				"resourceType": tc.resourceType,
 				"id":           "test-123",
 			}
@@ -110,7 +110,7 @@ func TestDIMPClient_Pseudonymize_HandlesEmptyResource(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	emptyResource := map[string]interface{}{}
+	emptyResource := map[string]any{}
 
 	_, err := client.Pseudonymize(emptyResource)
 	assert.Error(t, err)

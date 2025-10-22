@@ -10,7 +10,7 @@ import (
 
 // FHIRResource represents a generic FHIR resource as a map
 // We don't parse the full FHIR schema - just treat it as JSON
-type FHIRResource map[string]interface{}
+type FHIRResource map[string]any
 
 // GetResourceType extracts the resourceType field from a FHIR resource
 func (r FHIRResource) GetResourceType() (string, error) {

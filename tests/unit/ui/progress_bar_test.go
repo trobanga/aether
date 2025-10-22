@@ -136,10 +136,10 @@ func TestSpinner_SuccessFailure(t *testing.T) {
 	assert.False(t, spinner2.IsActive())
 }
 
-// Test FR-029d requirement: 2 second update throttle
+// Test Progress indicators must update at least every 2 seconds requirement: 2 second update throttle
 func TestProgressBar_UpdateFrequency(t *testing.T) {
 	var buf bytes.Buffer
-	bar := ui.NewProgressBarWithWriter(1000, "FR-029d Test", &buf)
+	bar := ui.NewProgressBarWithWriter(1000, "Progress indicators must update at least every 2 seconds Test", &buf)
 
 	// Add multiple small increments rapidly
 	for i := 0; i < 10; i++ {
@@ -152,7 +152,7 @@ func TestProgressBar_UpdateFrequency(t *testing.T) {
 	_ = bar.Finish()
 }
 
-// Test FR-029a requirement: Progress bar format verification
+// Test Progress bars must show completion percentage requirement: Progress bar format verification
 func TestProgressBar_Format(t *testing.T) {
 	var buf bytes.Buffer
 	bar := ui.NewProgressBarWithWriter(100, "Import FHIR files", &buf)
@@ -165,7 +165,7 @@ func TestProgressBar_Format(t *testing.T) {
 	assert.NotEmpty(t, output, "Progress bar should produce output")
 }
 
-// Test progress bar with description containing operation name (FR-029e)
+// Test progress bar with description containing operation name (progress indicator requirementse)
 func TestProgressBar_OperationName(t *testing.T) {
 	tests := []struct {
 		description string

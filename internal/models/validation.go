@@ -242,7 +242,7 @@ func ValidateJobsDir(path string) error {
 
 // ValidateServiceConnectivity checks if required service URLs are reachable
 // This performs a lightweight HTTP HEAD request to verify connectivity
-// Per T062: Service connectivity validation
+// Validates that configured service URLs are reachable
 func (c *ProjectConfig) ValidateServiceConnectivity() error {
 	client := &http.Client{
 		Timeout: 5 * time.Second, // Quick connectivity check

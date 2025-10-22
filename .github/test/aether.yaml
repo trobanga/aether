@@ -29,6 +29,7 @@ services:
   # Leave empty to skip pseudonymization step
   dimp:
     url: "${DIMP_URL}"
+    bundle_split_threshold_mb: 10
 
   # CSV Conversion Service (optional)
   # Leave empty to skip CSV conversion

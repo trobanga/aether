@@ -17,7 +17,7 @@ import (
 
 // ExecuteDIMPStep processes FHIR resources through the DIMP pseudonymization service
 // Reads from import/ directory, writes to pseudonymized/ directory
-// Per spec: T057 - DIMP step orchestration
+// Orchestrates Bundle splitting and oversized resource detection before pseudonymization
 func ExecuteDIMPStep(job *models.PipelineJob, jobDir string, logger *lib.Logger) error {
 	stepName := models.StepDIMP
 
@@ -110,7 +110,7 @@ func ExecuteDIMPStep(job *models.PipelineJob, jobDir string, logger *lib.Logger)
 		}
 
 		// Process file through DIMP using atomic write (writes to .part first)
-		resourcesProcessed, err := processDIMPFile(inputFile, outputFile, dimpClient, logger)
+		resourcesProcessed, err := processDIMPFile(inputFile, outputFile, dimpClient, logger, job)
 		if err != nil {
 			logger.Error("Failed to process FHIR file",
 				"filename", baseName,
@@ -153,7 +153,8 @@ func ExecuteDIMPStep(job *models.PipelineJob, jobDir string, logger *lib.Logger)
 // processDIMPFile processes a single NDJSON file through DIMP
 // Returns the number of resources processed
 // Uses atomic write pattern: writes to .part file, renames on success
-func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClient, logger *lib.Logger) (int, error) {
+// Implements Bundle splitting for large Bundles to prevent HTTP 413 errors
+func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClient, logger *lib.Logger, job *models.PipelineJob) (int, error) {
 	// Open input file
 	inFile, err := os.Open(inputFile)
 	if err != nil {
@@ -189,12 +190,15 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 		logger.Info("Processing FHIR resources (unknown count)", "file", filepath.Base(inputFile))
 	}
 
-	// Process line by line
-	scanner := bufio.NewScanner(inFile)
-	// Increase buffer to 10MB to handle large FHIR resources (default is 64KB)
-	// This prevents "token too long" errors when processing large Bundles or resources
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, 10*1024*1024)
+	// Get Bundle split threshold from config (convert MB to bytes)
+	thresholdMB := job.Config.Services.DIMP.BundleSplitThresholdMB
+	if thresholdMB <= 0 {
+		thresholdMB = 10 // Default to 10MB if not configured
+	}
+	thresholdBytes := thresholdMB * 1024 * 1024
+
+	// Process line by line with large buffer to handle very large FHIR resources
+	scanner := newLargeBufferScanner(inFile)
 	resourcesProcessed := 0
 
 	for scanner.Scan() {
@@ -204,7 +208,7 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 		}
 
 		// Parse FHIR resource
-		var resource map[string]interface{}
+		var resource map[string]any
 		if err := json.Unmarshal([]byte(line), &resource); err != nil {
 			// Clear progress bar before logging error
 			if progressBar != nil {
@@ -227,27 +231,199 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 			"resourceType", resourceType,
 			"id", resourceID)
 
-		// Send to DIMP for pseudonymization
-		pseudonymized, err := dimpClient.Pseudonymize(resource)
-		if err != nil {
-			// Clear progress bar before logging error
-			if progressBar != nil {
-				_ = progressBar.Clear()
+		var pseudonymized map[string]any
+
+		// Check if this is a Bundle and handle splitting if needed
+		if resourceType == "Bundle" {
+			// Calculate Bundle size
+			bundleSize, err := models.CalculateJSONSize(resource)
+			if err != nil {
+				if progressBar != nil {
+					_ = progressBar.Clear()
+				}
+				logger.Error("Failed to calculate Bundle size",
+					"file", filepath.Base(inputFile),
+					"line_number", resourcesProcessed+1,
+					"id", resourceID,
+					"error", err)
+				return resourcesProcessed, fmt.Errorf("failed to calculate Bundle size at line %d: %w", resourcesProcessed+1, err)
 			}
-			logger.Error("Failed to pseudonymize FHIR resource",
-				"file", filepath.Base(inputFile),
-				"line_number", resourcesProcessed+1,
-				"resourceType", resourceType,
-				"id", resourceID,
-				"error", err)
 
-			// Print user-friendly error message
-			fmt.Printf("\n✗ DIMP pseudonymization failed\n")
-			fmt.Printf("  File: %s (line %d)\n", filepath.Base(inputFile), resourcesProcessed+1)
-			fmt.Printf("  Resource: %s/%s\n", resourceType, resourceID)
-			fmt.Printf("  Error: %v\n\n", err)
+			// Check if splitting is needed
+			if services.ShouldSplit(bundleSize, thresholdBytes) {
+				// Log Bundle splitting operation for diagnostics
+				logger.Info("Bundle size exceeds threshold, splitting",
+					"bundle_id", resourceID,
+					"size_bytes", bundleSize,
+					"threshold_bytes", thresholdBytes,
+					"size_mb", float64(bundleSize)/(1024*1024),
+					"threshold_mb", thresholdMB,
+					"job_id", job.JobID)
 
-			return resourcesProcessed, fmt.Errorf("failed to pseudonymize resource at line %d: %w", resourcesProcessed+1, err)
+				// Split the Bundle
+				splitResult, err := services.SplitBundle(resource, thresholdBytes)
+				if err != nil {
+					if progressBar != nil {
+						_ = progressBar.Clear()
+					}
+					logger.Error("Failed to split Bundle",
+						"file", filepath.Base(inputFile),
+						"line_number", resourcesProcessed+1,
+						"bundle_id", resourceID,
+						"error", err)
+					return resourcesProcessed, fmt.Errorf("failed to split Bundle at line %d: %w", resourcesProcessed+1, err)
+				}
+
+				// Log split results for monitoring
+				logger.Info("Split Bundle into chunks",
+					"bundle_id", resourceID,
+					"chunks", splitResult.TotalChunks,
+					"job_id", job.JobID)
+
+				// Process each chunk through DIMP
+				pseudonymizedChunks := make([]map[string]any, 0, splitResult.TotalChunks)
+				for _, chunk := range splitResult.Chunks {
+					// Log chunk processing at DEBUG level to avoid log spam
+					logger.Debug("Processing Bundle chunk",
+						"bundle_id", resourceID,
+						"chunk", fmt.Sprintf("%d/%d", chunk.Index+1, chunk.TotalChunks),
+						"entries", len(chunk.Entries),
+						"estimated_bytes", chunk.EstimatedSize,
+						"job_id", job.JobID)
+
+					// Convert chunk to FHIR Bundle format
+					chunkBundle := models.ConvertChunkToBundle(chunk)
+
+					// Send chunk to DIMP for pseudonymization
+					pseudonymizedChunk, err := dimpClient.Pseudonymize(chunkBundle)
+					if err != nil {
+						if progressBar != nil {
+							_ = progressBar.Clear()
+						}
+						logger.Error("Failed to pseudonymize Bundle chunk",
+							"file", filepath.Base(inputFile),
+							"line_number", resourcesProcessed+1,
+							"bundle_id", resourceID,
+							"chunk_id", chunk.ChunkID,
+							"chunk", fmt.Sprintf("%d/%d", chunk.Index+1, chunk.TotalChunks),
+							"error", err)
+
+						// Print user-friendly error message
+						fmt.Printf("\n✗ DIMP pseudonymization failed (Bundle chunk)\n")
+						fmt.Printf("  File: %s (line %d)\n", filepath.Base(inputFile), resourcesProcessed+1)
+						fmt.Printf("  Bundle: %s\n", resourceID)
+						fmt.Printf("  Chunk: %d/%d\n", chunk.Index+1, chunk.TotalChunks)
+						fmt.Printf("  Error: %v\n\n", err)
+
+						return resourcesProcessed, fmt.Errorf("failed to pseudonymize Bundle chunk %d/%d at line %d: %w",
+							chunk.Index+1, chunk.TotalChunks, resourcesProcessed+1, err)
+					}
+
+					pseudonymizedChunks = append(pseudonymizedChunks, pseudonymizedChunk)
+				}
+
+				// Reassemble pseudonymized chunks into complete Bundle
+				reassembled, err := services.ReassembleBundle(splitResult.Metadata, pseudonymizedChunks)
+				if err != nil {
+					if progressBar != nil {
+						_ = progressBar.Clear()
+					}
+					logger.Error("Failed to reassemble Bundle chunks",
+						"file", filepath.Base(inputFile),
+						"line_number", resourcesProcessed+1,
+						"bundle_id", resourceID,
+						"chunks", len(pseudonymizedChunks),
+						"error", err)
+					return resourcesProcessed, fmt.Errorf("failed to reassemble Bundle at line %d: %w", resourcesProcessed+1, err)
+				}
+
+				// Log reassembly completion for monitoring
+				logger.Info("Reassembled Bundle from chunks",
+					"bundle_id", resourceID,
+					"entries", reassembled.EntryCount,
+					"chunks", len(pseudonymizedChunks),
+					"job_id", job.JobID)
+
+				pseudonymized = reassembled.Bundle
+			} else {
+				// Bundle is small enough - use direct DIMP path (no splitting)
+				logger.Debug("Bundle size below threshold, processing directly",
+					"bundle_id", resourceID,
+					"size_bytes", bundleSize,
+					"threshold_bytes", thresholdBytes,
+					"job_id", job.JobID)
+
+				pseudonymized, err = dimpClient.Pseudonymize(resource)
+				if err != nil {
+					if progressBar != nil {
+						_ = progressBar.Clear()
+					}
+					logger.Error("Failed to pseudonymize Bundle",
+						"file", filepath.Base(inputFile),
+						"line_number", resourcesProcessed+1,
+						"resourceType", resourceType,
+						"id", resourceID,
+						"error", err)
+
+					fmt.Printf("\n✗ DIMP pseudonymization failed\n")
+					fmt.Printf("  File: %s (line %d)\n", filepath.Base(inputFile), resourcesProcessed+1)
+					fmt.Printf("  Resource: %s/%s\n", resourceType, resourceID)
+					fmt.Printf("  Error: %v\n\n", err)
+
+					return resourcesProcessed, fmt.Errorf("failed to pseudonymize Bundle at line %d: %w", resourcesProcessed+1, err)
+				}
+			}
+		} else {
+			// Check for oversized non-Bundle resources and return error with guidance
+			oversizedErr := lib.DetectOversizedResource(resource, thresholdBytes)
+			if oversizedErr != nil {
+				// Log the oversized resource error
+				logger.Error("Oversized resource detected",
+					"file", filepath.Base(inputFile),
+					"line_number", resourcesProcessed+1,
+					"resourceType", resourceType,
+					"id", resourceID,
+					"size_bytes", oversizedErr.Size,
+					"threshold_bytes", oversizedErr.Threshold,
+					"job_id", job.JobID)
+
+				if progressBar != nil {
+					_ = progressBar.Clear()
+				}
+
+				// Print user-friendly error message with guidance
+				fmt.Printf("\n⚠ Oversized resource detected\n")
+				fmt.Printf("  File: %s (line %d)\n", filepath.Base(inputFile), resourcesProcessed+1)
+				fmt.Printf("  Resource: %s/%s\n", resourceType, resourceID)
+				fmt.Printf("  Size: %d bytes (%.2f MB)\n", oversizedErr.Size, float64(oversizedErr.Size)/(1024*1024))
+				fmt.Printf("  Threshold: %d bytes (%.2f MB)\n", oversizedErr.Threshold, float64(oversizedErr.Threshold)/(1024*1024))
+				fmt.Printf("  Guidance: %s\n\n", oversizedErr.Guidance)
+
+				return resourcesProcessed, fmt.Errorf("oversized resource at line %d: %w", resourcesProcessed+1, oversizedErr)
+			}
+
+			// Not a Bundle, not oversized - use existing direct DIMP path
+			pseudonymized, err = dimpClient.Pseudonymize(resource)
+			if err != nil {
+				// Clear progress bar before logging error
+				if progressBar != nil {
+					_ = progressBar.Clear()
+				}
+				logger.Error("Failed to pseudonymize FHIR resource",
+					"file", filepath.Base(inputFile),
+					"line_number", resourcesProcessed+1,
+					"resourceType", resourceType,
+					"id", resourceID,
+					"error", err)
+
+				// Print user-friendly error message
+				fmt.Printf("\n✗ DIMP pseudonymization failed\n")
+				fmt.Printf("  File: %s (line %d)\n", filepath.Base(inputFile), resourcesProcessed+1)
+				fmt.Printf("  Resource: %s/%s\n", resourceType, resourceID)
+				fmt.Printf("  Error: %v\n\n", err)
+
+				return resourcesProcessed, fmt.Errorf("failed to pseudonymize resource at line %d: %w", resourcesProcessed+1, err)
+			}
 		}
 
 		// Write pseudonymized resource to output
@@ -297,6 +473,16 @@ func processDIMPFile(inputFile, outputFile string, dimpClient *services.DIMPClie
 	return resourcesProcessed, nil
 }
 
+// newLargeBufferScanner creates a bufio.Scanner with a 100MB buffer to handle very large FHIR resources
+// Default bufio.Scanner buffer is 64KB which can cause "token too long" errors with complex queries
+func newLargeBufferScanner(r interface{ Read([]byte) (int, error) }) *bufio.Scanner {
+	scanner := bufio.NewScanner(r)
+	// Use 100MB buffer for very large FHIR resources (default is 64KB)
+	buf := make([]byte, 0, 100*1024*1024)
+	scanner.Buffer(buf, 100*1024*1024)
+	return scanner
+}
+
 // countResourcesInFile counts the number of non-empty lines in an NDJSON file
 func countResourcesInFile(filename string) int {
 	file, err := os.Open(filename)
@@ -306,10 +492,7 @@ func countResourcesInFile(filename string) int {
 	defer func() { _ = file.Close() }()
 
 	count := 0
-	scanner := bufio.NewScanner(file)
-	// Increase buffer to 10MB to handle large FHIR resources (default is 64KB)
-	buf := make([]byte, 0, 10*1024*1024)
-	scanner.Buffer(buf, 10*1024*1024)
+	scanner := newLargeBufferScanner(file)
 	for scanner.Scan() {
 		if strings.TrimSpace(scanner.Text()) != "" {
 			count++

@@ -216,7 +216,7 @@ func TestValidateImportSource_LocalDirectory(t *testing.T) {
 				return file
 			},
 			expectError: true,
-			errorMsg:    "not a directory",
+			errorMsg:    "expected directory but got file",
 		},
 		{
 			name: "Directory with no NDJSON files",
@@ -244,4 +244,247 @@ func TestValidateImportSource_LocalDirectory(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestValidateImportSource_HTTPValidation tests HTTP URL validation
+func TestValidateImportSource_HTTPValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "Valid HTTP URL",
+			url:         "http://example.com/data.ndjson",
+			expectError: false,
+		},
+		{
+			name:        "Valid HTTPS URL",
+			url:         "https://secure.example.com/api/data",
+			expectError: false,
+		},
+		{
+			name:        "Empty URL",
+			url:         "",
+			expectError: true,
+			errorMsg:    "cannot be empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := services.ValidateImportSource(tt.url, models.InputTypeHTTP)
+
+			if tt.expectError {
+				assert.Error(t, err, "Should return error for: "+tt.name)
+				assert.Contains(t, err.Error(), tt.errorMsg, "Error message should match")
+			} else {
+				assert.NoError(t, err, "Should not return error for: "+tt.name)
+			}
+		})
+	}
+}
+
+// TestValidateImportSource_CRTDLValidation tests CRTDL file validation
+func TestValidateImportSource_CRTDLValidation(t *testing.T) {
+	tempDir := t.TempDir()
+
+	tests := []struct {
+		name        string
+		setupFunc   func() string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "Valid CRTDL file",
+			setupFunc: func() string {
+				file := filepath.Join(tempDir, "valid.crtdl")
+				_ = os.WriteFile(file, []byte("{}"), 0644)
+				return file
+			},
+			expectError: false,
+		},
+		{
+			name: "Empty CRTDL path",
+			setupFunc: func() string {
+				return ""
+			},
+			expectError: true,
+			errorMsg:    "cannot be empty",
+		},
+		{
+			name: "Non-existent CRTDL file",
+			setupFunc: func() string {
+				return filepath.Join(tempDir, "nonexistent.crtdl")
+			},
+			expectError: true,
+			errorMsg:    "does not exist",
+		},
+		{
+			name: "CRTDL path is directory",
+			setupFunc: func() string {
+				dir := filepath.Join(tempDir, "crtdl_dir")
+				_ = os.MkdirAll(dir, 0755)
+				return dir
+			},
+			expectError: true,
+			errorMsg:    "directory, not a file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sourcePath := tt.setupFunc()
+			err := services.ValidateImportSource(sourcePath, models.InputTypeCRTDL)
+
+			if tt.expectError {
+				assert.Error(t, err, "Should return error for: "+tt.name)
+				assert.Contains(t, err.Error(), tt.errorMsg, "Error message should match")
+			} else {
+				assert.NoError(t, err, "Should not return error for: "+tt.name)
+			}
+		})
+	}
+}
+
+// TestValidateImportSource_TORCHValidation tests TORCH URL validation
+func TestValidateImportSource_TORCHValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "Valid TORCH HTTP URL",
+			url:         "http://torch.example.com/results",
+			expectError: false,
+		},
+		{
+			name:        "Valid TORCH HTTPS URL",
+			url:         "https://secure-torch.example.com/api/results",
+			expectError: false,
+		},
+		{
+			name:        "Empty TORCH URL",
+			url:         "",
+			expectError: true,
+			errorMsg:    "cannot be empty",
+		},
+		{
+			name:        "Invalid scheme (FTP)",
+			url:         "ftp://torch.example.com/results",
+			expectError: true,
+			errorMsg:    "must start with http",
+		},
+		{
+			name:        "Invalid scheme (file)",
+			url:         "file:///path/to/file",
+			expectError: true,
+			errorMsg:    "must start with http",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := services.ValidateImportSource(tt.url, models.InputTypeTORCHURL)
+
+			if tt.expectError {
+				assert.Error(t, err, "Should return error for: "+tt.name)
+				assert.Contains(t, err.Error(), tt.errorMsg, "Error message should match")
+			} else {
+				assert.NoError(t, err, "Should not return error for: "+tt.name)
+			}
+		})
+	}
+}
+
+// TestValidateImportSource_UnknownType tests unknown input type handling
+func TestValidateImportSource_UnknownType(t *testing.T) {
+	err := services.ValidateImportSource("/some/path", "unknown-input-type")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown input type")
+}
+
+// TestImportFromLocalDirectory_JSONFile tests error handling when .json file is passed instead of directory (line 29-30)
+func TestImportFromLocalDirectory_JSONFile(t *testing.T) {
+	tempDir := t.TempDir()
+	sourceFile := filepath.Join(tempDir, "data.json")
+	destDir := filepath.Join(tempDir, "dest")
+	logger := lib.NewLogger(lib.LogLevelInfo)
+
+	// Create source as a JSON file, not directory
+	require.NoError(t, os.WriteFile(sourceFile, []byte(`{"test": "data"}`), 0644))
+
+	// Execute import
+	importedFiles, err := services.ImportFromLocalDirectory(sourceFile, destDir, logger)
+
+	// Verify error (line 29-30 path)
+	assert.Error(t, err, "Should fail when source is a .json file")
+	assert.Contains(t, err.Error(), "JSON/CRTDL file", "Error should mention JSON/CRTDL file")
+	assert.Contains(t, err.Error(), "not a directory", "Error should mention not a directory")
+	assert.Contains(t, err.Error(), "InputTypeCRTDL", "Error should mention InputTypeCRTDL")
+	assert.Nil(t, importedFiles, "Should not return files on error")
+}
+
+// TestImportFromLocalDirectory_CRTDLFile tests error handling when .crtdl file is passed instead of directory (line 29-30)
+func TestImportFromLocalDirectory_CRTDLFile(t *testing.T) {
+	tempDir := t.TempDir()
+	sourceFile := filepath.Join(tempDir, "cohort.crtdl")
+	destDir := filepath.Join(tempDir, "dest")
+	logger := lib.NewLogger(lib.LogLevelInfo)
+
+	// Create source as a CRTDL file, not directory
+	require.NoError(t, os.WriteFile(sourceFile, []byte(`{"cohortDefinition": {}}`), 0644))
+
+	// Execute import
+	importedFiles, err := services.ImportFromLocalDirectory(sourceFile, destDir, logger)
+
+	// Verify error (line 29-30 path)
+	assert.Error(t, err, "Should fail when source is a .crtdl file")
+	assert.Contains(t, err.Error(), "JSON/CRTDL file", "Error should mention JSON/CRTDL file")
+	assert.Contains(t, err.Error(), "not a directory", "Error should mention not a directory")
+	assert.Contains(t, err.Error(), "InputTypeCRTDL", "Error should mention InputTypeCRTDL")
+	assert.Nil(t, importedFiles, "Should not return files on error")
+}
+
+// TestValidateImportSource_JSONFileForLocalInput tests validation hint for .json file with InputTypeLocal (line 174-178)
+func TestValidateImportSource_JSONFileForLocalInput(t *testing.T) {
+	tempDir := t.TempDir()
+	jsonFile := filepath.Join(tempDir, "data.json")
+
+	// Create JSON file
+	require.NoError(t, os.WriteFile(jsonFile, []byte(`{"test": "data"}`), 0644))
+
+	// Validate with InputTypeLocal (should fail with helpful hint - line 174-178)
+	err := services.ValidateImportSource(jsonFile, models.InputTypeLocal)
+
+	assert.Error(t, err, "Should return error for JSON file with InputTypeLocal")
+	assert.Contains(t, err.Error(), "expected directory but got file", "Error should mention file vs directory")
+	// Verify the hint message (lines 174-178)
+	assert.Contains(t, err.Error(), "JSON/CRTDL file", "Error should contain JSON/CRTDL hint")
+	assert.Contains(t, err.Error(), "cohortDefinition", "Error should mention cohortDefinition")
+	assert.Contains(t, err.Error(), "dataExtraction", "Error should mention dataExtraction")
+	assert.Contains(t, err.Error(), "verbose logging", "Error should mention verbose logging")
+}
+
+// TestValidateImportSource_CRTDLFileForLocalInput tests validation hint for .crtdl file with InputTypeLocal (line 174-178)
+func TestValidateImportSource_CRTDLFileForLocalInput(t *testing.T) {
+	tempDir := t.TempDir()
+	crtdlFile := filepath.Join(tempDir, "cohort.crtdl")
+
+	// Create CRTDL file
+	require.NoError(t, os.WriteFile(crtdlFile, []byte(`{"cohortDefinition": {}}`), 0644))
+
+	// Validate with InputTypeLocal (should fail with helpful hint - line 174-178)
+	err := services.ValidateImportSource(crtdlFile, models.InputTypeLocal)
+
+	assert.Error(t, err, "Should return error for CRTDL file with InputTypeLocal")
+	assert.Contains(t, err.Error(), "expected directory but got file", "Error should mention file vs directory")
+	// Verify the hint message (lines 174-178)
+	assert.Contains(t, err.Error(), "JSON/CRTDL file", "Error should contain JSON/CRTDL hint")
+	assert.Contains(t, err.Error(), "cohortDefinition", "Error should mention cohortDefinition")
+	assert.Contains(t, err.Error(), "dataExtraction", "Error should mention dataExtraction")
+	assert.Contains(t, err.Error(), "verbose logging", "Error should mention verbose logging")
 }

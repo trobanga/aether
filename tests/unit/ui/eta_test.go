@@ -77,7 +77,7 @@ func TestETACalculator_ThroughputCalculation(t *testing.T) {
 	assert.Greater(t, throughput, 0.0, "Throughput should be positive")
 }
 
-// Test FR-029b requirement: Average computed from last 10 items or 30 seconds
+// Test Progress indicators must show elapsed time and ETA requirement: Average computed from last 10 items or 30 seconds
 func TestETACalculator_AveragingWindow(t *testing.T) {
 	// Test max samples limit (10 items)
 	calc := ui.NewETACalculatorCustom(10, 30*time.Second)
@@ -93,7 +93,7 @@ func TestETACalculator_AveragingWindow(t *testing.T) {
 	assert.NotNil(t, eta)
 }
 
-// Test FR-029b requirement: 30-second time window
+// Test Progress indicators must show elapsed time and ETA requirement: 30-second time window
 func TestETACalculator_TimeWindow(t *testing.T) {
 	// Use shorter time window for testing
 	calc := ui.NewETACalculatorCustom(100, 200*time.Millisecond)
@@ -171,7 +171,7 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
-// Test FR-029b formula: ETA = (total_items - processed_items) * avg_time_per_item
+// Test Progress indicators must show elapsed time and ETA formula: ETA = (total_items - processed_items) * avg_time_per_item
 func TestETACalculator_FormulaVerification(t *testing.T) {
 	calc := ui.NewETACalculator()
 

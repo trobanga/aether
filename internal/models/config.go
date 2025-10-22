@@ -23,7 +23,8 @@ type ServiceConfig struct {
 
 // DIMPConfig contains DIMP pseudonymization service settings
 type DIMPConfig struct {
-	URL string `yaml:"url" json:"url"`
+	URL                    string `yaml:"url" json:"url"`
+	BundleSplitThresholdMB int    `yaml:"bundle_split_threshold_mb" json:"bundle_split_threshold_mb"` // Default 10MB - threshold for splitting large Bundles to prevent HTTP 413 errors
 }
 
 // CSVConversionConfig contains CSV conversion service settings
@@ -64,7 +65,8 @@ func DefaultConfig() ProjectConfig {
 	return ProjectConfig{
 		Services: ServiceConfig{
 			DIMP: DIMPConfig{
-				URL: "",
+				URL:                    "",
+				BundleSplitThresholdMB: 10, // 10MB default threshold for Bundle splitting
 			},
 			CSVConversion: CSVConversionConfig{
 				URL: "",

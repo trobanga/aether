@@ -86,33 +86,60 @@ func DetectInputType(inputSource string) (models.InputType, error) {
 
 	// Check if CRTDL file
 	if strings.HasSuffix(inputSource, ".crtdl") || strings.HasSuffix(inputSource, ".json") {
-		if IsCRTDLFile(inputSource) {
+		isCRTDL, _ := IsCRTDLFileWithHint(inputSource)
+		if isCRTDL {
 			return models.InputTypeCRTDL, nil
 		}
+		// If it's a JSON/CRTDL file but not valid CRTDL, default to local type
+		// CRTDL validation errors will be caught during job creation, not during detection
+		return models.InputTypeLocal, nil
 	}
 
 	// Default to local path (backward compatibility)
-	// Validation of path existence happens later in ValidateImportSource
+	// Validation of path existence and type happens later in ValidateImportSource
 	return models.InputTypeLocal, nil
 }
 
 // IsCRTDLFile checks if the file at the given path is a valid CRTDL file
 // by verifying it contains required cohortDefinition and dataExtraction keys
 func IsCRTDLFile(path string) bool {
+	isCRTDL, _ := IsCRTDLFileWithHint(path)
+	return isCRTDL
+}
+
+// IsCRTDLFileWithHint checks if the file is a valid CRTDL and provides a hint if not
+// Returns (isValid, hint) where hint explains what's wrong with the structure
+func IsCRTDLFileWithHint(path string) (bool, string) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return false
+		return false, fmt.Sprintf("cannot read file: %v", err)
 	}
 
-	var crtdl map[string]interface{}
+	var crtdl map[string]any
 	if err := json.Unmarshal(data, &crtdl); err != nil {
-		return false
+		return false, fmt.Sprintf("not valid JSON: %v", err)
+	}
+
+	// Check for FHIR Parameters format (newer format)
+	if resourceType, ok := crtdl["resourceType"].(string); ok && resourceType == "Parameters" {
+		return false, "file uses FHIR Parameters format - please convert to flat CRTDL structure (see example-crtdl.json)"
 	}
 
 	// Verify required CRTDL structure
 	_, hasCohort := crtdl["cohortDefinition"]
 	_, hasExtraction := crtdl["dataExtraction"]
-	return hasCohort && hasExtraction
+
+	if !hasCohort && !hasExtraction {
+		return false, "missing both 'cohortDefinition' and 'dataExtraction' keys"
+	}
+	if !hasCohort {
+		return false, "missing 'cohortDefinition' key"
+	}
+	if !hasExtraction {
+		return false, "missing 'dataExtraction' key"
+	}
+
+	return true, ""
 }
 
 // ValidateCRTDLSyntax validates the syntax of a CRTDL file
@@ -120,45 +147,128 @@ func IsCRTDLFile(path string) bool {
 func ValidateCRTDLSyntax(crtdlPath string) error {
 	data, err := os.ReadFile(crtdlPath)
 	if err != nil {
-		return fmt.Errorf("failed to read CRTDL file: %w", err)
+		return fmt.Errorf("failed to read CRTDL file '%s': %w", crtdlPath, err)
 	}
 
 	if len(data) == 0 {
-		return fmt.Errorf("CRTDL file is empty")
+		return fmt.Errorf("CRTDL file '%s' is empty", crtdlPath)
 	}
 
-	var crtdl map[string]interface{}
+	var crtdl map[string]any
 	if err := json.Unmarshal(data, &crtdl); err != nil {
-		return fmt.Errorf("invalid JSON: %w", err)
+		return fmt.Errorf("CRTDL file '%s' contains invalid JSON: %w\n\nPlease ensure the file is valid JSON format", crtdlPath, err)
+	}
+
+	// Check for FHIR Parameters format (common mistake)
+	if resourceType, ok := crtdl["resourceType"].(string); ok && resourceType == "Parameters" {
+		return fmt.Errorf("CRTDL file '%s' uses FHIR Parameters format\n\nThis format is not supported. Please convert to flat CRTDL structure:\n{\n  \"cohortDefinition\": { \"inclusionCriteria\": [...] },\n  \"dataExtraction\": { \"attributeGroups\": [...] }\n}\n\nSee .github/test/torch/queries/example-crtdl.json for reference", crtdlPath)
 	}
 
 	// Check required keys
 	cohort, hasCohort := crtdl["cohortDefinition"]
 	if !hasCohort {
-		return fmt.Errorf("missing required key: cohortDefinition")
+		availableKeys := make([]string, 0, len(crtdl))
+		for k := range crtdl {
+			availableKeys = append(availableKeys, k)
+		}
+		return fmt.Errorf("CRTDL file '%s' missing required key: 'cohortDefinition'\n\nFound keys: %v\n\nExpected structure:\n{\n  \"cohortDefinition\": { \"inclusionCriteria\": [...] },\n  \"dataExtraction\": { \"attributeGroups\": [...] }\n}", crtdlPath, availableKeys)
 	}
 
 	extraction, hasExtraction := crtdl["dataExtraction"]
 	if !hasExtraction {
-		return fmt.Errorf("missing required key: dataExtraction")
+		availableKeys := make([]string, 0, len(crtdl))
+		for k := range crtdl {
+			availableKeys = append(availableKeys, k)
+		}
+		return fmt.Errorf("CRTDL file '%s' missing required key: 'dataExtraction'\n\nFound keys: %v\n\nExpected structure:\n{\n  \"cohortDefinition\": { \"inclusionCriteria\": [...] },\n  \"dataExtraction\": { \"attributeGroups\": [...] }\n}", crtdlPath, availableKeys)
 	}
 
 	// Validate cohortDefinition structure
-	cohortMap, ok := cohort.(map[string]interface{})
+	cohortMap, ok := cohort.(map[string]any)
 	if !ok {
-		return fmt.Errorf("cohortDefinition must be an object")
+		return fmt.Errorf("CRTDL file '%s': 'cohortDefinition' must be an object, got %T", crtdlPath, cohort)
 	}
 	if _, hasInclusion := cohortMap["inclusionCriteria"]; !hasInclusion {
-		return fmt.Errorf("cohortDefinition missing inclusionCriteria")
+		cohortKeys := make([]string, 0, len(cohortMap))
+		for k := range cohortMap {
+			cohortKeys = append(cohortKeys, k)
+		}
+		return fmt.Errorf("CRTDL file '%s': cohortDefinition missing 'inclusionCriteria'\n\nFound keys in cohortDefinition: %v\n\nExpected: { \"inclusionCriteria\": [[...]] }", crtdlPath, cohortKeys)
 	}
 
 	// Validate dataExtraction structure
-	extractionMap, ok := extraction.(map[string]interface{})
+	extractionMap, ok := extraction.(map[string]any)
 	if !ok {
-		return fmt.Errorf("dataExtraction must be an object")
+		return fmt.Errorf("CRTDL file '%s': 'dataExtraction' must be an object, got %T", crtdlPath, extraction)
 	}
 	if _, hasGroups := extractionMap["attributeGroups"]; !hasGroups {
-		return fmt.Errorf("dataExtraction missing attributeGroups")
+		extractionKeys := make([]string, 0, len(extractionMap))
+		for k := range extractionMap {
+			extractionKeys = append(extractionKeys, k)
+		}
+		return fmt.Errorf("CRTDL file '%s': dataExtraction missing 'attributeGroups'\n\nFound keys in dataExtraction: %v\n\nExpected: { \"attributeGroups\": [...] }", crtdlPath, extractionKeys)
+	}
+
+	return nil
+}
+
+// ValidateSplitConfig validates the Bundle split threshold configuration
+// Ensures threshold is positive, within limits, and logs warnings if appropriate
+func ValidateSplitConfig(thresholdMB int) error {
+	if thresholdMB <= 0 {
+		return fmt.Errorf("bundle_split_threshold_mb must be > 0, got %d", thresholdMB)
+	}
+
+	if thresholdMB > 100 {
+		return fmt.Errorf("bundle_split_threshold_mb must be <= 100MB, got %d (likely misconfiguration)", thresholdMB)
+	}
+
+	// Note: Values > 50MB should trigger a warning at runtime in the pipeline step
+	// This function only validates the value itself
+
+	return nil
+}
+
+// DetectOversizedResource checks if a non-Bundle resource exceeds the threshold
+// Returns OversizedResourceError if the resource is too large, nil otherwise
+func DetectOversizedResource(resource map[string]any, thresholdBytes int) *models.OversizedResourceError {
+	// Bundle resources are handled by the splitting logic, not this function
+	if resourceType, ok := resource["resourceType"].(string); ok && resourceType == "Bundle" {
+		return nil // Bundles are handled separately
+	}
+
+	// Calculate resource size
+	jsonData, err := json.Marshal(resource)
+	if err != nil {
+		// If we can't marshal, assume it's okay (error will be caught elsewhere)
+		return nil
+	}
+
+	resourceSize := len(jsonData)
+	if resourceSize > thresholdBytes {
+		resourceType := "Unknown"
+		resourceID := "unknown"
+
+		if rt, ok := resource["resourceType"].(string); ok {
+			resourceType = rt
+		}
+		if id, ok := resource["id"].(string); ok {
+			resourceID = id
+		}
+
+		guidance := fmt.Sprintf(
+			"This resource cannot be split without violating FHIR semantics. "+
+				"Solutions: (1) Review data quality - resource may contain unnecessary data; "+
+				"(2) Increase DIMP server payload limit; (3) Increase bundle_split_threshold_mb configuration.",
+		)
+
+		return &models.OversizedResourceError{
+			ResourceType: resourceType,
+			ResourceID:   resourceID,
+			Size:         resourceSize,
+			Threshold:    thresholdBytes,
+			Guidance:     guidance,
+		}
 	}
 
 	return nil

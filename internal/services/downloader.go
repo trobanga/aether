@@ -45,7 +45,7 @@ func DownloadFromURL(url string, destinationDir string, httpClient *HTTPClient, 
 		}
 	}()
 
-	// Start spinner for connection phase (FR-029c: unknown duration)
+	// Start spinner for connection phase (duration is initially unknown)
 	spinner := ui.NewSpinner(fmt.Sprintf("Connecting to %s", url))
 	if showProgress {
 		spinner.Start()
@@ -54,7 +54,7 @@ func DownloadFromURL(url string, destinationDir string, httpClient *HTTPClient, 
 	// Download file
 	var bytesDownloaded int64
 	if showProgress {
-		// Use progress bar for download (FR-029a: known size operations)
+		// Use progress bar for download (when size is known)
 		// Note: We won't know total size until we start download, so we'll use spinner initially
 
 		bytesDownloaded, err = httpClient.Download(url, destFile)
@@ -100,7 +100,7 @@ func DownloadFromURL(url string, destinationDir string, httpClient *HTTPClient, 
 }
 
 // DownloadFromURLWithProgress downloads a file with detailed progress tracking
-// FR-029: Shows progress bar with percentage, ETA, throughput
+// Shows progress bar with percentage, ETA, and throughput for user feedback
 func DownloadFromURLWithProgress(url string, destinationDir string, httpClient *HTTPClient, logger *lib.Logger) ([]models.FHIRDataFile, error) {
 	// Ensure destination directory exists
 	if err := os.MkdirAll(destinationDir, 0755); err != nil {

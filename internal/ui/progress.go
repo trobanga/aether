@@ -9,8 +9,8 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-// ProgressBar wraps the progressbar library with FR-029 requirements
-// Provides progress visualization with percentage, ETA, throughput
+// ProgressBar wraps the progressbar library to provide progress visualization
+// with percentage, ETA, and throughput for user feedback
 type ProgressBar struct {
 	bar         *progressbar.ProgressBar
 	description string
@@ -20,8 +20,8 @@ type ProgressBar struct {
 }
 
 // NewProgressBar creates a progress bar for operations with known total size
-// FR-029a: Progress bars for known-size operations
-// FR-029d: Updates every 2 seconds minimum
+// Progress bars provide visual feedback with completion percentage and throughput
+// Updates every 500ms to provide timely feedback to users
 func NewProgressBar(total int64, description string) *ProgressBar {
 	bar := progressbar.NewOptions64(
 		total,
@@ -68,7 +68,7 @@ func NewProgressBarWithWriter(total int64, description string, writer io.Writer)
 }
 
 // Add increments the progress bar by the given amount
-// FR-029e: Updates throughput automatically
+// Throughput (items/sec) is calculated and displayed automatically
 func (p *ProgressBar) Add(amount int64) error {
 	p.current += amount
 	return p.bar.Add64(amount)
@@ -90,8 +90,7 @@ func (p *ProgressBar) Clear() error {
 	return p.bar.Clear()
 }
 
-// GetPercentage returns current completion percentage
-// FR-029e: Percentage display
+// GetPercentage returns current completion percentage (0-100)
 func (p *ProgressBar) GetPercentage() float64 {
 	if p.total == 0 {
 		return 0
@@ -100,13 +99,12 @@ func (p *ProgressBar) GetPercentage() float64 {
 }
 
 // GetElapsedTime returns time elapsed since progress bar was created
-// FR-029e: Elapsed time display
 func (p *ProgressBar) GetElapsedTime() time.Duration {
 	return time.Since(p.startTime)
 }
 
 // Spinner provides visual feedback for operations with unknown duration
-// FR-029c: Spinners for unknown duration operations
+// Used when total size or duration cannot be determined in advance
 type Spinner struct {
 	description string
 	startTime   time.Time

@@ -11,7 +11,7 @@ import (
 	"github.com/trobanga/aether/internal/models"
 )
 
-// T008: Unit tests for InputType detection
+// Unit tests for InputType detection
 
 func TestDetectInputType_LocalDirectory(t *testing.T) {
 	tmpDir := t.TempDir()

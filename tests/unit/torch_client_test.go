@@ -17,19 +17,19 @@ import (
 	"github.com/trobanga/aether/internal/services"
 )
 
-// T020: Unit test for TORCH client SubmitExtraction()
+// Unit test for TORCH client SubmitExtraction()
 
 func TestTORCHClient_SubmitExtraction_Success(t *testing.T) {
 	// Create temp CRTDL file
 	tempDir := t.TempDir()
 	crtdlPath := filepath.Join(tempDir, "test.crtdl")
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version":           "1.0.0",
-			"inclusionCriteria": []interface{}{},
+			"inclusionCriteria": []any{},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []interface{}{},
+		"dataExtraction": map[string]any{
+			"attributeGroups": []any{},
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)
@@ -49,7 +49,7 @@ func TestTORCHClient_SubmitExtraction_Success(t *testing.T) {
 		assert.Contains(t, authHeader, "Basic ")
 
 		// Verify body is valid FHIR Parameters
-		var params map[string]interface{}
+		var params map[string]any
 		err := json.NewDecoder(r.Body).Decode(&params)
 		require.NoError(t, err)
 		assert.Equal(t, "Parameters", params["resourceType"])
@@ -126,7 +126,7 @@ func TestTORCHClient_SubmitExtraction_Unauthorized(t *testing.T) {
 	assert.Contains(t, err.Error(), "401")
 }
 
-// T021: Unit test for TORCH client PollExtractionStatus()
+// Unit test for TORCH client PollExtractionStatus()
 
 func TestTORCHClient_PollExtractionStatus_ImmediateSuccess(t *testing.T) {
 	// Mock TORCH server that returns success immediately
@@ -136,12 +136,12 @@ func TestTORCHClient_PollExtractionStatus_ImmediateSuccess(t *testing.T) {
 		assert.Contains(t, r.URL.Path, "/fhir/extraction/")
 
 		// Return 200 with file URLs
-		result := map[string]interface{}{
+		result := map[string]any{
 			"resourceType": "Parameters",
-			"parameter": []map[string]interface{}{
+			"parameter": []map[string]any{
 				{
 					"name": "output",
-					"part": []map[string]interface{}{
+					"part": []map[string]any{
 						{
 							"name":     "url",
 							"valueUrl": serverURL + "/output/batch-1.ndjson",
@@ -182,6 +182,50 @@ func TestTORCHClient_PollExtractionStatus_ImmediateSuccess(t *testing.T) {
 	assert.Equal(t, server.URL+"/output/batch-2.ndjson", urls[1])
 }
 
+func TestTORCHClient_PollExtractionStatus_EmptyOutput(t *testing.T) {
+	// Mock TORCH server that returns success but with empty output array
+	// This happens when CRTDL query matches no data
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Contains(t, r.URL.Path, "/fhir/extraction/")
+
+		// Return 200 with TORCH simple format but empty output
+		result := map[string]any{
+			"requiresAccessToken": false,
+			"output":              []any{},
+			"request":             "http://torch:8080/fhir/$extract-data",
+			"deleted":             []any{},
+			"transactionTime":     "2025-10-23T10:45:27.359016918Z",
+			"error":               []any{},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(result)
+	}))
+	defer server.Close()
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:                   server.URL,
+		Username:                  "testuser",
+		Password:                  "testpass",
+		ExtractionTimeoutMinutes:  1,
+		PollingIntervalSeconds:    1,
+		MaxPollingIntervalSeconds: 5,
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+	urls, err := client.PollExtractionStatus(server.URL+"/fhir/extraction/job-123", false)
+
+	// Should return error with helpful message
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "TORCH extraction completed successfully but found no matching data")
+	assert.Contains(t, err.Error(), "CRTDL query criteria matched no resources")
+	assert.Nil(t, urls)
+}
+
 func TestTORCHClient_PollExtractionStatus_Timeout(t *testing.T) {
 	// Mock TORCH server that always returns 202
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -212,9 +256,9 @@ func TestTORCHClient_PollExtractionStatus_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"resourceType": "OperationOutcome",
-			"issue": []map[string]interface{}{
+			"issue": []map[string]any{
 				{
 					"severity":    "error",
 					"code":        "processing",
@@ -243,7 +287,7 @@ func TestTORCHClient_PollExtractionStatus_ServerError(t *testing.T) {
 	assert.Contains(t, err.Error(), "500")
 }
 
-// T022: Unit test for TORCH client DownloadExtractionFiles()
+// Unit test for TORCH client DownloadExtractionFiles()
 
 func TestTORCHClient_DownloadExtractionFiles_Success(t *testing.T) {
 	ndjsonContent := `{"resourceType":"Patient","id":"1"}
@@ -336,19 +380,19 @@ func TestTORCHClient_DownloadExtractionFiles_PartialFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "404")
 }
 
-// T023: Unit test for base64 CRTDL encoding
+// Unit test for base64 CRTDL encoding
 
 func TestTORCHClient_EncodeCRTDLToBase64_ValidJSON(t *testing.T) {
 	// Create temp CRTDL file
 	tempDir := t.TempDir()
 	crtdlPath := filepath.Join(tempDir, "test.crtdl")
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version":           "1.0.0",
-			"inclusionCriteria": []interface{}{},
+			"inclusionCriteria": []any{},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []interface{}{},
+		"dataExtraction": map[string]any{
+			"attributeGroups": []any{},
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)
@@ -379,7 +423,7 @@ func TestTORCHClient_EncodeCRTDLToBase64_ValidJSON(t *testing.T) {
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	require.NoError(t, err)
 
-	var decodedCRTDL map[string]interface{}
+	var decodedCRTDL map[string]any
 	err = json.Unmarshal(decoded, &decodedCRTDL)
 	require.NoError(t, err)
 
@@ -387,7 +431,7 @@ func TestTORCHClient_EncodeCRTDLToBase64_ValidJSON(t *testing.T) {
 	assert.Contains(t, decodedCRTDL, "dataExtraction")
 }
 
-// T024: Unit test for exponential backoff polling logic
+// Unit test for exponential backoff polling logic
 
 func TestTORCHClient_PollExtractionStatus_ExponentialBackoff(t *testing.T) {
 	pollTimes := []time.Time{}
@@ -406,12 +450,12 @@ func TestTORCHClient_PollExtractionStatus_ExponentialBackoff(t *testing.T) {
 		}
 
 		// Return 200 (complete)
-		result := map[string]interface{}{
+		result := map[string]any{
 			"resourceType": "Parameters",
-			"parameter": []map[string]interface{}{
+			"parameter": []map[string]any{
 				{
 					"name": "output",
-					"part": []map[string]interface{}{
+					"part": []map[string]any{
 						{
 							"name":     "url",
 							"valueUrl": serverURL + "/output/result.ndjson",
@@ -495,7 +539,7 @@ func TestTORCHClient_Ping_Unreachable(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// T071: Performance test - verify TORCH connectivity check < 5 seconds
+// Performance test - verify TORCH connectivity check < 5 seconds
 
 func TestTORCHClient_Ping_PerformanceWithin5Seconds(t *testing.T) {
 	// Mock TORCH server with slight delay to simulate realistic network latency

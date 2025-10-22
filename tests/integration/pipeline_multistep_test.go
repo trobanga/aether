@@ -23,7 +23,7 @@ import (
 func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 	// Setup mock DIMP service
 	dimpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var resource map[string]interface{}
+		var resource map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&resource)
 
 		// Simple pseudonymization
@@ -43,7 +43,7 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 
 	// Create test FHIR data
 	testFile := filepath.Join(importDir, "test.ndjson")
-	testResources := []map[string]interface{}{
+	testResources := []map[string]any{
 		{"resourceType": "Patient", "id": "patient1", "name": []map[string]string{{"family": "Smith"}}},
 		{"resourceType": "Patient", "id": "patient2", "name": []map[string]string{{"family": "Jones"}}},
 	}
@@ -167,7 +167,7 @@ func TestPipelineMultiStep_OnlyImportEnabled(t *testing.T) {
 
 	// Create test FHIR data
 	testFile := filepath.Join(importDir, "test.ndjson")
-	testResources := []map[string]interface{}{
+	testResources := []map[string]any{
 		{"resourceType": "Patient", "id": "patient1"},
 	}
 	writeNDJSONToFile(t, testFile, testResources)
@@ -266,7 +266,7 @@ jobs_dir: "` + jobsDir + `"
 func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 	// Setup mock DIMP service
 	dimpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var resource map[string]interface{}
+		var resource map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
@@ -282,7 +282,7 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 
 	// Create test data
 	testFile := filepath.Join(importDir, "test.ndjson")
-	testResources := []map[string]interface{}{
+	testResources := []map[string]any{
 		{"resourceType": "Patient", "id": "p1"},
 	}
 	writeNDJSONToFile(t, testFile, testResources)
@@ -355,7 +355,7 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 }
 
 // Helper functions
-func writeNDJSONToFile(t *testing.T, filepath string, resources []map[string]interface{}) {
+func writeNDJSONToFile(t *testing.T, filepath string, resources []map[string]any) {
 	file, err := os.Create(filepath)
 	require.NoError(t, err)
 	defer func() {
@@ -370,17 +370,17 @@ func writeNDJSONToFile(t *testing.T, filepath string, resources []map[string]int
 	}
 }
 
-func readNDJSONFromFile(t *testing.T, filepath string) []map[string]interface{} {
+func readNDJSONFromFile(t *testing.T, filepath string) []map[string]any {
 	data, err := os.ReadFile(filepath)
 	require.NoError(t, err)
 
-	var resources []map[string]interface{}
+	var resources []map[string]any
 	lines := splitLinesByNewline(string(data))
 	for _, line := range lines {
 		if line == "" {
 			continue
 		}
-		var resource map[string]interface{}
+		var resource map[string]any
 		err := json.Unmarshal([]byte(line), &resource)
 		require.NoError(t, err)
 		resources = append(resources, resource)

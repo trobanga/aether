@@ -17,7 +17,7 @@ import (
 )
 
 // TestJobList_MultipleJobs tests listing all jobs in the jobs directory
-// This is T042: Integration test for job list with multiple jobs
+// Integration test for job list with multiple jobs
 func TestJobList_MultipleJobs(t *testing.T) {
 	tempDir := t.TempDir()
 	jobsDir := filepath.Join(tempDir, "jobs")

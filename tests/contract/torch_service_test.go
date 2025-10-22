@@ -17,7 +17,7 @@ import (
 	"github.com/trobanga/aether/internal/services"
 )
 
-// T004: Contract test for TORCH API submission endpoint
+// Contract test for TORCH API submission endpoint
 // Tests the FHIR $extract-data operation with CRTDL extraction request
 
 func TestTORCHService_SubmitExtraction_Success(t *testing.T) {
@@ -34,18 +34,18 @@ func TestTORCHService_SubmitExtraction_Success(t *testing.T) {
 		assert.Contains(t, authHeader, "Basic ")
 
 		// Verify FHIR Parameters resource structure
-		var params map[string]interface{}
+		var params map[string]any
 		err := json.NewDecoder(r.Body).Decode(&params)
 		require.NoError(t, err)
 
 		assert.Equal(t, "Parameters", params["resourceType"])
 
 		// Verify parameter array with base64-encoded CRTDL
-		paramArray, ok := params["parameter"].([]interface{})
+		paramArray, ok := params["parameter"].([]any)
 		require.True(t, ok, "parameter should be array")
 		require.Len(t, paramArray, 1, "should have one parameter")
 
-		param := paramArray[0].(map[string]interface{})
+		param := paramArray[0].(map[string]any)
 		assert.Equal(t, "crtdl", param["name"])
 
 		// Verify base64 encoding
@@ -56,7 +56,7 @@ func TestTORCHService_SubmitExtraction_Success(t *testing.T) {
 		decoded, err := base64.StdEncoding.DecodeString(base64Value)
 		require.NoError(t, err, "should be valid base64")
 
-		var crtdl map[string]interface{}
+		var crtdl map[string]any
 		err = json.Unmarshal(decoded, &crtdl)
 		require.NoError(t, err, "decoded value should be valid JSON")
 		assert.Contains(t, crtdl, "cohortDefinition")
@@ -71,13 +71,13 @@ func TestTORCHService_SubmitExtraction_Success(t *testing.T) {
 	// Create temp CRTDL file
 	tempDir := t.TempDir()
 	crtdlPath := filepath.Join(tempDir, "test.crtdl")
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version":           "1.0.0",
-			"inclusionCriteria": []interface{}{},
+			"inclusionCriteria": []any{},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []interface{}{},
+		"dataExtraction": map[string]any{
+			"attributeGroups": []any{},
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)
@@ -106,9 +106,9 @@ func TestTORCHService_SubmitExtraction_InvalidCRTDL(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"resourceType": "OperationOutcome",
-			"issue": []map[string]interface{}{
+			"issue": []map[string]any{
 				{
 					"severity":    "error",
 					"code":        "invalid",
@@ -170,7 +170,7 @@ func TestTORCHService_SubmitExtraction_Unauthorized(t *testing.T) {
 	assert.Contains(t, err.Error(), "401")
 }
 
-// T005: Contract test for TORCH API polling endpoint
+// Contract test for TORCH API polling endpoint
 
 func TestTORCHService_PollStatus_InProgress(t *testing.T) {
 	// Mock TORCH server returning HTTP 202 (still processing)
@@ -213,12 +213,12 @@ func TestTORCHService_PollStatus_Complete(t *testing.T) {
 		assert.Equal(t, "/fhir/extraction/job-123", r.URL.Path)
 
 		// Return FHIR Parameters with output URLs
-		result := map[string]interface{}{
+		result := map[string]any{
 			"resourceType": "Parameters",
-			"parameter": []map[string]interface{}{
+			"parameter": []map[string]any{
 				{
 					"name": "output",
-					"part": []map[string]interface{}{
+					"part": []map[string]any{
 						{
 							"name":     "url",
 							"valueUrl": serverURL + "/output/batch-1.ndjson",
@@ -264,9 +264,9 @@ func TestTORCHService_PollStatus_Failed(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"resourceType": "OperationOutcome",
-			"issue": []map[string]interface{}{
+			"issue": []map[string]any{
 				{
 					"severity":    "error",
 					"code":        "processing",
@@ -295,7 +295,7 @@ func TestTORCHService_PollStatus_Failed(t *testing.T) {
 	assert.Contains(t, err.Error(), "500")
 }
 
-// T006: Contract test for TORCH API file download
+// Contract test for TORCH API file download
 
 func TestTORCHService_DownloadFile_Success(t *testing.T) {
 	// Mock TORCH server serving NDJSON file
@@ -422,12 +422,12 @@ func TestTORCHService_EndToEnd_SubmitPollDownload(t *testing.T) {
 			}
 
 			// Return result with file URLs
-			result := map[string]interface{}{
+			result := map[string]any{
 				"resourceType": "Parameters",
-				"parameter": []map[string]interface{}{
+				"parameter": []map[string]any{
 					{
 						"name": "output",
-						"part": []map[string]interface{}{
+						"part": []map[string]any{
 							{
 								"name":     "url",
 								"valueUrl": serverURL + "/output/result.ndjson",
@@ -458,13 +458,13 @@ func TestTORCHService_EndToEnd_SubmitPollDownload(t *testing.T) {
 	// Create temp CRTDL file
 	tempDir := t.TempDir()
 	crtdlPath := filepath.Join(tempDir, "test.crtdl")
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version":           "1.0.0",
-			"inclusionCriteria": []interface{}{},
+			"inclusionCriteria": []any{},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []interface{}{},
+		"dataExtraction": map[string]any{
+			"attributeGroups": []any{},
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)

@@ -13,7 +13,7 @@ import (
 	"github.com/trobanga/aether/internal/services"
 )
 
-// T052: Contract test for DIMP service interaction per contracts/dimp-service.md
+// Contract test for DIMP service interaction per contracts/dimp-service.md
 
 func TestDIMPService_Pseudonymize_Success(t *testing.T) {
 	// Mock HTTP server that behaves like DIMP service
@@ -24,12 +24,12 @@ func TestDIMPService_Pseudonymize_Success(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		// Read original resource
-		var resource map[string]interface{}
+		var resource map[string]any
 		err := json.NewDecoder(r.Body).Decode(&resource)
 		assert.NoError(t, err)
 
 		// Return pseudonymized version
-		pseudonymized := map[string]interface{}{
+		pseudonymized := map[string]any{
 			"resourceType": resource["resourceType"],
 			"id":           "pseudonym-abc123xyz",
 		}
@@ -38,7 +38,7 @@ func TestDIMPService_Pseudonymize_Success(t *testing.T) {
 			pseudonymized["identifier"] = []map[string]string{
 				{"system": "http://hospital.org/patients", "value": "PSEUDO_98765"},
 			}
-			pseudonymized["name"] = []map[string]interface{}{
+			pseudonymized["name"] = []map[string]any{
 				{"family": "REDACTED", "given": []string{"REDACTED"}},
 			}
 			pseudonymized["birthDate"] = "1980"
@@ -55,13 +55,13 @@ func TestDIMPService_Pseudonymize_Success(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	originalPatient := map[string]interface{}{
+	originalPatient := map[string]any{
 		"resourceType": "Patient",
 		"id":           "example-patient-123",
 		"identifier": []map[string]string{
 			{"system": "http://hospital.org/patients", "value": "12345"},
 		},
-		"name": []map[string]interface{}{
+		"name": []map[string]any{
 			{"family": "Doe", "given": []string{"John"}},
 		},
 		"birthDate": "1980-01-01",
@@ -70,7 +70,7 @@ func TestDIMPService_Pseudonymize_Success(t *testing.T) {
 	result, err := client.Pseudonymize(originalPatient)
 	assert.NoError(t, err)
 	assert.Equal(t, "pseudonym-abc123xyz", result["id"])
-	assert.Equal(t, "REDACTED", result["name"].([]interface{})[0].(map[string]interface{})["family"])
+	assert.Equal(t, "REDACTED", result["name"].([]any)[0].(map[string]any)["family"])
 }
 
 func TestDIMPService_400BadRequest(t *testing.T) {
@@ -78,7 +78,7 @@ func TestDIMPService_400BadRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]string{
 				"code":    "invalid_resource",
 				"message": "Missing required field: resourceType",
@@ -92,7 +92,7 @@ func TestDIMPService_400BadRequest(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	malformedResource := map[string]interface{}{
+	malformedResource := map[string]any{
 		"id": "no-resource-type",
 	}
 
@@ -109,7 +109,7 @@ func TestDIMPService_500InternalServerError(t *testing.T) {
 		callCount++
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]string{
 				"code":    "internal_error",
 				"message": "Database connection failed",
@@ -123,7 +123,7 @@ func TestDIMPService_500InternalServerError(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}
@@ -146,7 +146,7 @@ func TestDIMPService_502BadGateway(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}
@@ -161,7 +161,7 @@ func TestDIMPService_422UnprocessableEntity(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]string{
 				"code":    "invalid_schema",
 				"message": "Resource does not conform to FHIR schema",
@@ -175,7 +175,7 @@ func TestDIMPService_422UnprocessableEntity(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"invalidField": "bad",
 	}
