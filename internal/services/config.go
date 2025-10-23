@@ -71,9 +71,15 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 				PollingIntervalSeconds:    viper.GetInt("services.torch.polling_interval_seconds"),
 				MaxPollingIntervalSeconds: viper.GetInt("services.torch.max_polling_interval_seconds"),
 			},
-			DIMPUrl:              expandEnvVars(viper.GetString("services.dimp_url")),
-			CSVConversionUrl:     expandEnvVars(viper.GetString("services.csv_conversion_url")),
-			ParquetConversionUrl: expandEnvVars(viper.GetString("services.parquet_conversion_url")),
+			DIMP: models.DIMPConfig{
+				URL: expandEnvVars(viper.GetString("services.dimp.url")),
+			},
+			CSVConversion: models.CSVConversionConfig{
+				URL: expandEnvVars(viper.GetString("services.csv_conversion.url")),
+			},
+			ParquetConversion: models.ParquetConversionConfig{
+				URL: expandEnvVars(viper.GetString("services.parquet_conversion.url")),
+			},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      viper.GetInt("retry.max_attempts"),

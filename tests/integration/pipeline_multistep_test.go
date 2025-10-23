@@ -52,7 +52,9 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 	// Create config with BOTH import and DIMP enabled
 	config := models.ProjectConfig{
 		Services: models.ServiceConfig{
-			DIMPUrl: dimpServer.URL,
+			DIMP: models.DIMPConfig{
+				URL: dimpServer.URL,
+			},
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
@@ -220,8 +222,10 @@ func TestPipelineMultiStep_ConfigLoadingPreservesSteps(t *testing.T) {
 	// Write config file with multiple steps
 	configContent := `
 services:
-  dimp_url: "http://localhost:8080"
-  csv_conversion_url: "http://localhost:9000"
+  dimp:
+    url: "http://localhost:8080"
+  csv_conversion:
+    url: "http://localhost:9000"
 
 pipeline:
   enabled_steps:
@@ -253,8 +257,8 @@ jobs_dir: "` + jobsDir + `"
 	assert.Equal(t, models.StepCSVConversion, config.Pipeline.EnabledSteps[2])
 
 	// Verify service URLs are loaded
-	assert.Equal(t, "http://localhost:8080", config.Services.DIMPUrl)
-	assert.Equal(t, "http://localhost:9000", config.Services.CSVConversionUrl)
+	assert.Equal(t, "http://localhost:8080", config.Services.DIMP.URL)
+	assert.Equal(t, "http://localhost:9000", config.Services.CSVConversion.URL)
 }
 
 // TestPipelineMultiStep_JobStatePersistedBetweenSteps verifies job state
@@ -285,7 +289,9 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 
 	config := models.ProjectConfig{
 		Services: models.ServiceConfig{
-			DIMPUrl: dimpServer.URL,
+			DIMP: models.DIMPConfig{
+				URL: dimpServer.URL,
+			},
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{

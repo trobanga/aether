@@ -15,10 +15,25 @@ type ProjectConfig struct {
 
 // ServiceConfig contains connection details for external HTTP services
 type ServiceConfig struct {
-	DIMPUrl              string      `yaml:"dimp_url" json:"dimp_url"`
-	CSVConversionUrl     string      `yaml:"csv_conversion_url" json:"csv_conversion_url"`
-	ParquetConversionUrl string      `yaml:"parquet_conversion_url" json:"parquet_conversion_url"`
-	TORCH                TORCHConfig `yaml:"torch" json:"torch"`
+	DIMP              DIMPConfig              `yaml:"dimp" json:"dimp"`
+	CSVConversion     CSVConversionConfig     `yaml:"csv_conversion" json:"csv_conversion"`
+	ParquetConversion ParquetConversionConfig `yaml:"parquet_conversion" json:"parquet_conversion"`
+	TORCH             TORCHConfig             `yaml:"torch" json:"torch"`
+}
+
+// DIMPConfig contains DIMP pseudonymization service settings
+type DIMPConfig struct {
+	URL string `yaml:"url" json:"url"`
+}
+
+// CSVConversionConfig contains CSV conversion service settings
+type CSVConversionConfig struct {
+	URL string `yaml:"url" json:"url"`
+}
+
+// ParquetConversionConfig contains Parquet conversion service settings
+type ParquetConversionConfig struct {
+	URL string `yaml:"url" json:"url"`
 }
 
 // TORCHConfig contains TORCH server connection and extraction behavior settings
@@ -48,9 +63,15 @@ type RetryConfig struct {
 func DefaultConfig() ProjectConfig {
 	return ProjectConfig{
 		Services: ServiceConfig{
-			DIMPUrl:              "",
-			CSVConversionUrl:     "",
-			ParquetConversionUrl: "",
+			DIMP: DIMPConfig{
+				URL: "",
+			},
+			CSVConversion: CSVConversionConfig{
+				URL: "",
+			},
+			ParquetConversion: ParquetConversionConfig{
+				URL: "",
+			},
 			TORCH: TORCHConfig{
 				BaseURL:                   "",
 				FileServerURL:             "",
@@ -135,11 +156,11 @@ func (c *PipelineConfig) GetNextStep(current StepName) StepName {
 func (c *ServiceConfig) HasServiceURL(step StepName) bool {
 	switch step {
 	case StepDIMP:
-		return c.DIMPUrl != ""
+		return c.DIMP.URL != ""
 	case StepCSVConversion:
-		return c.CSVConversionUrl != ""
+		return c.CSVConversion.URL != ""
 	case StepParquetConversion:
-		return c.ParquetConversionUrl != ""
+		return c.ParquetConversion.URL != ""
 	default:
 		return true // Import and validation don't require external services
 	}
@@ -149,11 +170,11 @@ func (c *ServiceConfig) HasServiceURL(step StepName) bool {
 func (c *ServiceConfig) GetServiceURL(step StepName) string {
 	switch step {
 	case StepDIMP:
-		return c.DIMPUrl
+		return c.DIMP.URL
 	case StepCSVConversion:
-		return c.CSVConversionUrl
+		return c.CSVConversion.URL
 	case StepParquetConversion:
-		return c.ParquetConversionUrl
+		return c.ParquetConversion.URL
 	default:
 		return ""
 	}

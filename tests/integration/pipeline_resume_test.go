@@ -41,8 +41,12 @@ func TestPipelineResume_AfterImportComplete(t *testing.T) {
 		},
 		JobsDir: jobsDir,
 		Services: models.ServiceConfig{
-			DIMPUrl:          "http://localhost:8083/fhir",
-			CSVConversionUrl: "http://localhost:9000/convert/csv",
+			DIMP: models.DIMPConfig{
+				URL: "http://localhost:8083/fhir",
+			},
+			CSVConversion: models.CSVConversionConfig{
+				URL: "http://localhost:9000/convert/csv",
+			},
 		},
 	}
 

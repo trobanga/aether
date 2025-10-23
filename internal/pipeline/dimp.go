@@ -37,7 +37,7 @@ func ExecuteDIMPStep(job *models.PipelineJob, jobDir string, logger *lib.Logger)
 	step.StartedAt = &now
 
 	// Validate DIMP service URL is configured
-	if job.Config.Services.DIMPUrl == "" {
+	if job.Config.Services.DIMP.URL == "" {
 		err := fmt.Errorf("DIMP service URL not configured")
 		lib.LogStepFailed(logger, string(stepName), job.JobID, err, false)
 		recordStepError(step, err, models.ErrorTypeNonTransient)
@@ -46,7 +46,7 @@ func ExecuteDIMPStep(job *models.PipelineJob, jobDir string, logger *lib.Logger)
 
 	// Create DIMP client
 	httpClient := services.DefaultHTTPClient()
-	dimpClient := services.NewDIMPClient(job.Config.Services.DIMPUrl, httpClient, logger)
+	dimpClient := services.NewDIMPClient(job.Config.Services.DIMP.URL, httpClient, logger)
 
 	// Setup directories
 	importDir := filepath.Join(jobDir, "import")
