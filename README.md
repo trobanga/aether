@@ -9,6 +9,9 @@ A command-line interface for orchestrating Data Use Process (DUP) pipelines for 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go)](https://go.dev/)
 [![codecov](https://codecov.io/gh/trobanga/aether/branch/main/graph/badge.svg)](https://codecov.io/gh/trobanga/aether)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/trobanga/aether/badge)](https://scorecard.dev/viewer/?uri=github.com/{owner}/{repo})
+
+
 
 ## Table of Contents
 
