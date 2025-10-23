@@ -170,19 +170,19 @@ func (c *ProjectConfig) Validate() error {
 	}
 
 	// Validate service URLs are well-formed (if provided)
-	if c.Services.DIMPUrl != "" {
-		if _, err := url.Parse(c.Services.DIMPUrl); err != nil {
-			return fmt.Errorf("invalid dimp_url: %w", err)
+	if c.Services.DIMP.URL != "" {
+		if _, err := url.Parse(c.Services.DIMP.URL); err != nil {
+			return fmt.Errorf("invalid dimp url: %w", err)
 		}
 	}
-	if c.Services.CSVConversionUrl != "" {
-		if _, err := url.Parse(c.Services.CSVConversionUrl); err != nil {
-			return fmt.Errorf("invalid csv_conversion_url: %w", err)
+	if c.Services.CSVConversion.URL != "" {
+		if _, err := url.Parse(c.Services.CSVConversion.URL); err != nil {
+			return fmt.Errorf("invalid csv_conversion url: %w", err)
 		}
 	}
-	if c.Services.ParquetConversionUrl != "" {
-		if _, err := url.Parse(c.Services.ParquetConversionUrl); err != nil {
-			return fmt.Errorf("invalid parquet_conversion_url: %w", err)
+	if c.Services.ParquetConversion.URL != "" {
+		if _, err := url.Parse(c.Services.ParquetConversion.URL); err != nil {
+			return fmt.Errorf("invalid parquet_conversion url: %w", err)
 		}
 	}
 
@@ -276,13 +276,13 @@ func (c *ProjectConfig) ValidateServiceConnectivity() error {
 
 		switch step {
 		case StepDIMP:
-			serviceURL = c.Services.DIMPUrl
+			serviceURL = c.Services.DIMP.URL
 			serviceName = "DIMP"
 		case StepCSVConversion:
-			serviceURL = c.Services.CSVConversionUrl
+			serviceURL = c.Services.CSVConversion.URL
 			serviceName = "CSV Conversion"
 		case StepParquetConversion:
-			serviceURL = c.Services.ParquetConversionUrl
+			serviceURL = c.Services.ParquetConversion.URL
 			serviceName = "Parquet Conversion"
 		default:
 			continue // Skip steps that don't require external services

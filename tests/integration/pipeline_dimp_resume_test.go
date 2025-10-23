@@ -37,7 +37,9 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Services: models.ServiceConfig{
-			DIMPUrl: "http://localhost:32861/fhir", // Assume DIMP service is running
+			DIMP: models.DIMPConfig{
+				URL: "http://localhost:32861/fhir", // Assume DIMP service is running
+			},
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{models.StepImport, models.StepDIMP},
