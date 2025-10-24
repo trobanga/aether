@@ -16,9 +16,11 @@ services:
         - torch
   torch:
     restart: unless-stopped
-    image: ghcr.io/medizininformatik-initiative/torch:1.0.0-alpha.10
+    image: ghcr.io/medizininformatik-initiative/torch:1.0.0-alpha.11
     networks: [ "aether", "torch" ]
-    ports: [ ":8080" ]
+    ports:
+      - ":8080"
+      - "9010:9010"  # JMX port for VisualVM profiling
     environment:
       TORCH_RESULTS_PERSISTENCE: PT12H30M5S
       TORCH_BUFFERSIZE: 100
@@ -28,7 +30,14 @@ services:
       TORCH_FLARE_URL: http://torch-flare:8080
       TORCH_FHIR_URL: http://torch-hds:8080/fhir
       # Execution variables
-      JAVA_TOOL_OPTIONS: -Xmx8g
+      JAVA_TOOL_OPTIONS: >-
+        -Xmx8g
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.port=9010
+        -Dcom.sun.management.jmxremote.rmi.port=9010
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=localhost
       TORCH_USE_CQL: true
       TORCH_FHIR_DISABLE_ASYNC: true
       TORCH_BATCHSIZE: 500
@@ -36,7 +45,7 @@ services:
       TORCH_FHIR_MAX_CONNECTIONS: 5
       TORCH_MAXCONCURRENCY: 4
       # Other
-      LOG_LEVEL: info
+      LOG_LEVEL: trace
       
     volumes:
       - ./output:/app/output
@@ -51,6 +60,10 @@ services:
     networks: [ "torch" ]
     environment:
       BASE_URL: http://torch-hds:8080
+      DB_RESOURCE_CACHE_SIZE: "100000"  # Cache up to 100K resources
+      DB_MAX_SEARCH_RESULT_SIZE: "200000"  # Allow large search results
+      LOG_LEVEL: debug
+      JAVA_TOOL_OPTIONS: "-Xmx8g"
     healthcheck:
       test: [ "CMD", "curl", "-sSf", "http://localhost:8080/health" ]
       interval: 10s

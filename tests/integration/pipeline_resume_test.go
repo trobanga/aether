@@ -14,7 +14,7 @@ import (
 )
 
 // TestPipelineResume_AfterImportComplete tests resuming pipeline after import step completes
-// This is T041: Integration test for pipeline resumption
+// Integration test for pipeline resumption
 func TestPipelineResume_AfterImportComplete(t *testing.T) {
 	// Setup: Create temporary directories
 	tempDir := t.TempDir()

@@ -36,35 +36,35 @@ func NewLogger(level LogLevel) *Logger {
 var DefaultLogger = NewLogger(LogLevelInfo)
 
 // Debug logs a debug message
-func (l *Logger) Debug(message string, fields ...interface{}) {
+func (l *Logger) Debug(message string, fields ...any) {
 	if l.level <= LogLevelDebug {
 		l.log("DEBUG", message, fields...)
 	}
 }
 
 // Info logs an informational message
-func (l *Logger) Info(message string, fields ...interface{}) {
+func (l *Logger) Info(message string, fields ...any) {
 	if l.level <= LogLevelInfo {
 		l.log("INFO", message, fields...)
 	}
 }
 
 // Warn logs a warning message
-func (l *Logger) Warn(message string, fields ...interface{}) {
+func (l *Logger) Warn(message string, fields ...any) {
 	if l.level <= LogLevelWarn {
 		l.log("WARN", message, fields...)
 	}
 }
 
 // Error logs an error message
-func (l *Logger) Error(message string, fields ...interface{}) {
+func (l *Logger) Error(message string, fields ...any) {
 	if l.level <= LogLevelError {
 		l.log("ERROR", message, fields...)
 	}
 }
 
 // log formats and writes a log message with optional fields
-func (l *Logger) log(level string, message string, fields ...interface{}) {
+func (l *Logger) log(level string, message string, fields ...any) {
 	var fieldsStr string
 	if len(fields) > 0 {
 		fieldsStr = fmt.Sprintf(" | %v", fields)

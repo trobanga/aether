@@ -190,7 +190,7 @@ func (c *TORCHClient) SubmitExtraction(crtdlPath string) (string, error) {
 // PollExtractionStatus polls the extraction status URL until completion or timeout
 // Returns the list of file URLs when extraction is complete
 // Per TORCH API: GET Content-Location URL until HTTP 200, handle HTTP 202 as in-progress
-// FR-029c: Uses spinner for unknown-duration polling
+// Uses spinner for polling (duration unknown until extraction completes)
 func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bool) ([]string, error) {
 	c.logger.Info("Polling TORCH extraction status", "url", extractionURL)
 
@@ -201,7 +201,7 @@ func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bo
 
 	pollCount := 0
 
-	// Start spinner for polling (FR-029c: unknown duration)
+	// Start spinner for polling (duration unknown)
 	var spinner *ui.Spinner
 	if showProgress {
 		spinner = ui.NewSpinner("Waiting for TORCH extraction to complete")
@@ -294,7 +294,7 @@ func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bo
 
 // DownloadExtractionFiles downloads all NDJSON files from the extraction result
 // Returns list of downloaded files with metadata
-// FR-029c: Uses spinner for each file download (unknown size)
+// Uses spinner for each file download (file size is unknown)
 func (c *TORCHClient) DownloadExtractionFiles(fileURLs []string, destinationDir string, showProgress bool) ([]models.FHIRDataFile, error) {
 	c.logger.Info("Downloading TORCH extraction files",
 		"file_count", len(fileURLs),
@@ -328,7 +328,7 @@ func (c *TORCHClient) DownloadExtractionFiles(fileURLs []string, destinationDir 
 
 		destPath := filepath.Join(destinationDir, fileName)
 
-		// Start spinner for this download (FR-029c: unknown size)
+		// Start spinner for this download (file size unknown)
 		var spinner *ui.Spinner
 		if showProgress {
 			spinnerMsg := fmt.Sprintf("Downloading file %d/%d: %s", i+1, len(fileURLs), fileName)
@@ -475,7 +475,7 @@ func (c *TORCHClient) encodeCRTDLToBase64(crtdlPath string) (string, error) {
 	}
 
 	// Validate it's valid JSON
-	var crtdl map[string]interface{}
+	var crtdl map[string]any
 	if err := json.Unmarshal(crtdlContent, &crtdl); err != nil {
 		return "", fmt.Errorf("CRTDL file is not valid JSON: %w", err)
 	}
@@ -500,25 +500,59 @@ func (c *TORCHClient) parseExtractionResult(responseBody []byte) ([]string, erro
 		return nil, fmt.Errorf("empty response body from TORCH server")
 	}
 
-	// Try parsing as simplified TORCH format first (most common)
-	var simpleResult TORCHSimpleResponse
-	if err := json.Unmarshal(responseBody, &simpleResult); err == nil && len(simpleResult.Output) > 0 {
-		c.logger.Debug("Parsed TORCH simple format response", "file_count", len(simpleResult.Output))
-		return c.extractURLsFromSimpleFormat(simpleResult), nil
-	}
-
-	// Try parsing as FHIR Parameters format (documented format)
+	// First, check which format we're dealing with by looking for distinctive fields
+	// Try parsing as FHIR Parameters format first (documented format)
 	var fhirResult TORCHExtractionResult
-	if err := json.Unmarshal(responseBody, &fhirResult); err != nil {
-		return nil, fmt.Errorf("failed to parse extraction result (invalid JSON): %w. Response body: %s", err, string(responseBody))
-	}
-
-	if fhirResult.ResourceType == "Parameters" {
+	if err := json.Unmarshal(responseBody, &fhirResult); err == nil && fhirResult.ResourceType == "Parameters" {
 		c.logger.Debug("Parsed FHIR Parameters format response")
 		return c.extractURLsFromFHIRFormat(fhirResult), nil
 	}
 
-	// Neither format matched
+	// Try parsing as simplified TORCH format (actual format used by server)
+	var simpleResult TORCHSimpleResponse
+	if err := json.Unmarshal(responseBody, &simpleResult); err == nil {
+		// Check if this looks like TORCH simple format by verifying it has the expected structure
+		// We need to distinguish between actual TORCH simple format and random JSON that happens to parse
+		var rawMap map[string]interface{}
+		_ = json.Unmarshal(responseBody, &rawMap)
+
+		// TORCH simple format should have "output" field at minimum
+		if _, hasOutput := rawMap["output"]; hasOutput {
+			// Valid TORCH simple format response - check if it has data
+			if len(simpleResult.Output) > 0 {
+				c.logger.Debug("Parsed TORCH simple format response", "file_count", len(simpleResult.Output))
+				return c.extractURLsFromSimpleFormat(simpleResult), nil
+			}
+
+			// TORCH processed request but found no data - this is the actual error
+			// Try to parse error details if available
+			var detailedError struct {
+				Error []map[string]interface{} `json:"error"`
+			}
+			_ = json.Unmarshal(responseBody, &detailedError)
+
+			if len(detailedError.Error) > 0 {
+				// TORCH reported specific errors
+				return nil, fmt.Errorf("TORCH extraction completed but found no data (errors reported). Check CRTDL query criteria. Error details: %v", detailedError.Error)
+			}
+
+			// No output and no error - likely CRTDL matched no resources
+			return nil, fmt.Errorf("TORCH extraction completed successfully but found no matching data. This usually means:\n" +
+				"  1. The CRTDL query criteria matched no resources in the source system\n" +
+				"  2. The time period specified in the CRTDL is outside available data range\n" +
+				"  3. The patient/cohort identifiers in the CRTDL don't exist\n" +
+				"Check your CRTDL file and verify the query parameters match available data in TORCH")
+		}
+	}
+
+	// Invalid JSON or neither format matched
+	var jsonErr error
+	if err := json.Unmarshal(responseBody, &map[string]interface{}{}); err != nil {
+		jsonErr = err
+		return nil, fmt.Errorf("failed to parse extraction result (invalid JSON): %w. Response body: %s", jsonErr, string(responseBody))
+	}
+
+	// Valid JSON but unexpected format
 	return nil, fmt.Errorf("unexpected response format (expected FHIR Parameters or TORCH simple format). Response body: %s", string(responseBody))
 }
 

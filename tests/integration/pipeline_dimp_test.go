@@ -9,20 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// T055: Integration test for full DIMP step execution
+// Integration test for full DIMP step execution
 
 func TestPipelineDIMP_EndToEnd(t *testing.T) {
 	// Setup mock DIMP service
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/$de-identify", r.URL.Path)
 
-		var resource map[string]interface{}
+		var resource map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&resource)
 
 		// Pseudonymize the resource
 		resource["id"] = "pseudo-" + resource["id"].(string)
-		if names, ok := resource["name"].([]interface{}); ok && len(names) > 0 {
-			if nameMap, ok := names[0].(map[string]interface{}); ok {
+		if names, ok := resource["name"].([]any); ok && len(names) > 0 {
+			if nameMap, ok := names[0].(map[string]any); ok {
 				nameMap["family"] = "REDACTED"
 			}
 		}
@@ -41,7 +41,7 @@ func TestPipelineDIMP_EndToEnd(t *testing.T) {
 	//
 	// // Write test FHIR NDJSON files
 	// patientsFile := filepath.Join(importDir, "patients.ndjson")
-	// patients := []map[string]interface{}{
+	// patients := []map[string]any{
 	//     {"resourceType": "Patient", "id": "p1", "name": []map[string]string{{"family": "Smith"}}},
 	//     {"resourceType": "Patient", "id": "p2", "name": []map[string]string{{"family": "Jones"}}},
 	// }
@@ -72,14 +72,14 @@ func TestPipelineDIMP_EndToEnd(t *testing.T) {
 	// assert.Len(t, resources, 2)
 	// assert.Equal(t, "pseudo-p1", resources[0]["id"])
 	// assert.Equal(t, "pseudo-p2", resources[1]["id"])
-	// assert.Equal(t, "REDACTED", resources[0]["name"].([]interface{})[0].(map[string]interface{})["family"])
+	// assert.Equal(t, "REDACTED", resources[0]["name"].([]any)[0].(map[string]any)["family"])
 
 	t.Skip("Skipping until internal/pipeline/dimp.go is implemented")
 }
 
 func TestPipelineDIMP_MultipleFiles(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var resource map[string]interface{}
+		var resource map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
@@ -98,7 +98,7 @@ func TestPipelineDIMP_MultipleFiles(t *testing.T) {
 	// files := []string{"patients.ndjson", "observations.ndjson", "conditions.ndjson"}
 	// for _, filename := range files {
 	//     filepath := filepath.Join(importDir, filename)
-	//     resources := []map[string]interface{}{
+	//     resources := []map[string]any{
 	//         {"resourceType": "Patient", "id": "test-1"},
 	//         {"resourceType": "Patient", "id": "test-2"},
 	//     }
@@ -122,7 +122,7 @@ func TestPipelineDIMP_MultipleFiles(t *testing.T) {
 
 func TestPipelineDIMP_ProgressReporting(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var resource map[string]interface{}
+		var resource map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
@@ -139,9 +139,9 @@ func TestPipelineDIMP_ProgressReporting(t *testing.T) {
 	//
 	// // Create file with many resources to observe progress
 	// filepath := filepath.Join(importDir, "many_patients.ndjson")
-	// resources := make([]map[string]interface{}, 100)
+	// resources := make([]map[string]any, 100)
 	// for i := 0; i < 100; i++ {
-	//     resources[i] = map[string]interface{}{
+	//     resources[i] = map[string]any{
 	//         "resourceType": "Patient",
 	//         "id":           fmt.Sprintf("p%d", i),
 	//     }
@@ -174,7 +174,7 @@ func TestPipelineDIMP_ServiceError_NonRetryable(t *testing.T) {
 	// os.MkdirAll(importDir, 0755)
 	//
 	// filepath := filepath.Join(importDir, "patients.ndjson")
-	// resources := []map[string]interface{}{
+	// resources := []map[string]any{
 	//     {"resourceType": "Patient", "id": "p1"},
 	// }
 	// writeNDJSON(t, filepath, resources)
@@ -201,7 +201,7 @@ func TestPipelineDIMP_ServiceError_Retryable(t *testing.T) {
 			return
 		}
 		// Succeed on 3rd attempt
-		var resource map[string]interface{}
+		var resource map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&resource)
 		resource["id"] = "pseudo-" + resource["id"].(string)
 		w.Header().Set("Content-Type", "application/json")
@@ -217,7 +217,7 @@ func TestPipelineDIMP_ServiceError_Retryable(t *testing.T) {
 	// os.MkdirAll(importDir, 0755)
 	//
 	// filepath := filepath.Join(importDir, "patients.ndjson")
-	// resources := []map[string]interface{}{
+	// resources := []map[string]any{
 	//     {"resourceType": "Patient", "id": "p1"},
 	// }
 	// writeNDJSON(t, filepath, resources)

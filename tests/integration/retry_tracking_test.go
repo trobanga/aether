@@ -14,7 +14,7 @@ import (
 )
 
 // TestRetryTracking_IncrementRetryCount tests that retry counts are properly incremented
-// This is T043: Integration test for retry count tracking
+// Integration test for retry count tracking
 func TestRetryTracking_IncrementRetryCount(t *testing.T) {
 	tempDir := t.TempDir()
 	jobsDir := filepath.Join(tempDir, "jobs")

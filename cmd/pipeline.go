@@ -162,8 +162,10 @@ func executeStep(job *models.PipelineJob, stepName models.StepName, config *mode
 		// Execute DIMP pseudonymization step
 		fmt.Println("Starting DIMP pseudonymization step...")
 		if err := pipeline.ExecuteDIMPStep(job, jobDir, logger); err != nil {
+			// Mark job as failed
+			failedJob := pipeline.FailJob(job, err.Error())
 			// Save failed state
-			if saveErr := pipeline.UpdateJob(config.JobsDir, job); saveErr != nil {
+			if saveErr := pipeline.UpdateJob(config.JobsDir, failedJob); saveErr != nil {
 				logger.Error("Failed to save job state", "error", saveErr)
 			}
 			return fmt.Errorf("DIMP step failed: %w", err)
@@ -262,13 +264,19 @@ func runPipelineStart(cmd *cobra.Command, args []string) error {
 	showProgress := !noProgress
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, showProgress)
 
-	// Save state after import (whether success or failure)
-	if saveErr := pipeline.UpdateJob(config.JobsDir, importedJob); saveErr != nil {
-		logger.Error("Failed to save job state", "error", saveErr)
+	if err != nil {
+		// Mark job as failed
+		failedJob := pipeline.FailJob(importedJob, err.Error())
+		// Save failed state
+		if saveErr := pipeline.UpdateJob(config.JobsDir, failedJob); saveErr != nil {
+			logger.Error("Failed to save job state", "error", saveErr)
+		}
+		return fmt.Errorf("import step failed: %w", err)
 	}
 
-	if err != nil {
-		return fmt.Errorf("import step failed: %w", err)
+	// Save successful state after import
+	if saveErr := pipeline.UpdateJob(config.JobsDir, importedJob); saveErr != nil {
+		logger.Error("Failed to save job state", "error", saveErr)
 	}
 
 	fmt.Printf("\n✓ Import completed successfully\n")
@@ -308,6 +316,11 @@ func runPipelineStart(cmd *cobra.Command, args []string) error {
 
 		// Execute the next step
 		if err := executeStep(advancedJob, nextStepName, config, logger, noProgress); err != nil {
+			// Mark job as failed
+			failedJob := pipeline.FailJob(advancedJob, err.Error())
+			if saveErr := pipeline.UpdateJob(config.JobsDir, failedJob); saveErr != nil {
+				logger.Error("Failed to save failed job state", "error", saveErr)
+			}
 			return err
 		}
 

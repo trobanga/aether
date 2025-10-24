@@ -72,7 +72,8 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 				MaxPollingIntervalSeconds: viper.GetInt("services.torch.max_polling_interval_seconds"),
 			},
 			DIMP: models.DIMPConfig{
-				URL: expandEnvVars(viper.GetString("services.dimp.url")),
+				URL:                    expandEnvVars(viper.GetString("services.dimp.url")),
+				BundleSplitThresholdMB: viper.GetInt("services.dimp.bundle_split_threshold_mb"),
 			},
 			CSVConversion: models.CSVConversionConfig{
 				URL: expandEnvVars(viper.GetString("services.csv_conversion.url")),
@@ -100,6 +101,12 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 		defaults := models.DefaultConfig()
 		if len(config.Pipeline.EnabledSteps) == 0 {
 			config.Pipeline.EnabledSteps = defaults.Pipeline.EnabledSteps
+		}
+		if config.Services.DIMP.URL == "" && defaults.Services.DIMP.URL != "" {
+			config.Services.DIMP.URL = defaults.Services.DIMP.URL
+		}
+		if config.Services.DIMP.BundleSplitThresholdMB == 0 {
+			config.Services.DIMP.BundleSplitThresholdMB = defaults.Services.DIMP.BundleSplitThresholdMB
 		}
 		if config.Retry.MaxAttempts == 0 {
 			config.Retry = defaults.Retry
@@ -131,6 +138,10 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 		if config.Services.TORCH.MaxPollingIntervalSeconds == 0 {
 			config.Services.TORCH.MaxPollingIntervalSeconds = 30
 		}
+		// Apply DIMP Bundle split threshold default if not set
+		if config.Services.DIMP.BundleSplitThresholdMB == 0 {
+			config.Services.DIMP.BundleSplitThresholdMB = 10 // 10MB default
+		}
 	}
 
 	// Validate the configuration
@@ -160,7 +171,7 @@ func GetConfigFilePath() string {
 
 // SetConfigValue allows runtime override of config values
 // Useful for CLI flag overrides
-func SetConfigValue(key string, value interface{}) {
+func SetConfigValue(key string, value any) {
 	viper.Set(key, value)
 }
 

@@ -29,7 +29,7 @@ func NewDIMPClient(baseURL string, httpClient *HTTPClient, logger *lib.Logger) *
 // Pseudonymize sends a FHIR resource to the DIMP service for pseudonymization
 // Returns the pseudonymized resource or an error
 // Per contract: POST /$de-identify with single FHIR resource
-func (c *DIMPClient) Pseudonymize(resource map[string]interface{}) (map[string]interface{}, error) {
+func (c *DIMPClient) Pseudonymize(resource map[string]any) (map[string]any, error) {
 	// Extract resource info for logging
 	resourceType, _ := resource["resourceType"].(string)
 	resourceID, _ := resource["id"].(string)
@@ -96,7 +96,7 @@ func (c *DIMPClient) Pseudonymize(resource map[string]interface{}) (map[string]i
 		"id", resourceID)
 
 	// Success - parse pseudonymized resource
-	var pseudonymized map[string]interface{}
+	var pseudonymized map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&pseudonymized); err != nil {
 		c.logger.Error("Failed to decode DIMP response",
 			"resourceType", resourceType,

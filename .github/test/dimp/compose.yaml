@@ -12,11 +12,11 @@ services:
     volumes:
       - "./anonymization.yaml:/opt/fhir-pseudonymizer/anonymization.yaml:ro"
     environment:
-      DOTNET_EnableDiagnostics: "0"
-      PseudonymizationService: "Vfps"
-      Vfps__Address: "dns:///vfps:8081"
-      AnonymizationEngineConfigPath: "/opt/fhir-pseudonymizer/anonymization.yaml"
-      UseSystemTextJsonFhirSerializer: "true"
+      DOTNET_EnableDiagnostics: 0
+      PseudonymizationService: Vfps
+      Vfps__Address: dns:///vfps:8081
+      AnonymizationEngineConfigPath: /opt/fhir-pseudonymizer/anonymization.yaml
+      UseSystemTextJsonFhirSerializer: true
     depends_on:
       - vfps
     cap_drop:
@@ -51,8 +51,8 @@ services:
     networks: [ "dimp", "vfps" ]
     ports: [ ":8080", ":8081" ]
     environment:
-      COMPlus_EnableDiagnostics: "0"
-      ForceRunDatabaseMigrations: "true"
+      COMPlus_EnableDiagnostics: 0
+      ForceRunDatabaseMigrations: true
       ConnectionStrings__PostgreSQL: "Host=vfps_db;Port=5432;Database=vfps;Username=postgres;Password=postgres;Timeout=60;Max Auto Prepare=5;Application Name=vfps;Maximum Pool Size=50;"
       PGUSER: postgres
       PGPASSWORD: postgres

@@ -35,6 +35,13 @@ services:
   dimp:
     url: "http://localhost:32861/fhir"
 
+    # Bundle splitting threshold in megabytes (MB)
+    # Large FHIR Bundles exceeding this size will be automatically split into smaller chunks
+    # to prevent HTTP 413 "Payload Too Large" errors when sending to DIMP
+    # Range: 1-100 MB
+    # Default: 10 MB
+    bundle_split_threshold_mb: 10
+
   # CSV Conversion Service (optional)
   # Leave empty to skip CSV conversion
   csv_conversion:

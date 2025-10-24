@@ -17,7 +17,7 @@ import (
 	"github.com/trobanga/aether/internal/services"
 )
 
-// T025: Integration test for CRTDL → extraction → download flow
+// Integration test for CRTDL → extraction → download flow
 
 func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 	// Setup: Create test environment
@@ -27,11 +27,11 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 
 	// Create CRTDL file
 	crtdlPath := filepath.Join(tempDir, "test.crtdl")
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version": "1.0.0",
 			"display": "Test cohort",
-			"inclusionCriteria": []map[string]interface{}{
+			"inclusionCriteria": []map[string]any{
 				{
 					"name": "age_criteria",
 					"type": "age",
@@ -40,8 +40,8 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 				},
 			},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []map[string]interface{}{
+		"dataExtraction": map[string]any{
+			"attributeGroups": []map[string]any{
 				{
 					"name":         "demographics",
 					"resourceType": "Patient",
@@ -67,7 +67,7 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 		// Handle extraction submission
 		if r.Method == "POST" && r.URL.Path == "/fhir/$extract-data" {
 			// Verify FHIR Parameters format
-			var params map[string]interface{}
+			var params map[string]any
 			err := json.NewDecoder(r.Body).Decode(&params)
 			require.NoError(t, err)
 			assert.Equal(t, "Parameters", params["resourceType"])
@@ -88,12 +88,12 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 			}
 
 			// Extraction complete - return file URLs
-			result := map[string]interface{}{
+			result := map[string]any{
 				"resourceType": "Parameters",
-				"parameter": []map[string]interface{}{
+				"parameter": []map[string]any{
 					{
 						"name": "output",
-						"part": []map[string]interface{}{
+						"part": []map[string]any{
 							{
 								"name":     "url",
 								"valueUrl": server.URL + "/output/Patient.ndjson",
@@ -221,9 +221,9 @@ func TestPipeline_TORCHExtraction_EmptyResult(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/fhir/extraction/empty-job" {
 			// Return result with no output files
-			result := map[string]interface{}{
+			result := map[string]any{
 				"resourceType": "Parameters",
-				"parameter":    []map[string]interface{}{},
+				"parameter":    []map[string]any{},
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -316,7 +316,7 @@ func TestPipeline_TORCHExtraction_ServerUnavailable(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// T054: Integration test for direct TORCH URL download
+// Integration test for direct TORCH URL download
 
 func TestPipeline_DirectTORCHURL_Download(t *testing.T) {
 	// Setup: Create test environment
@@ -336,12 +336,12 @@ func TestPipeline_DirectTORCHURL_Download(t *testing.T) {
 		// Handle direct result URL GET (should return 200 immediately with file URLs)
 		if r.Method == "GET" && r.URL.Path == resultPath {
 			// Return completed extraction result directly
-			result := map[string]interface{}{
+			result := map[string]any{
 				"resourceType": "Parameters",
-				"parameter": []map[string]interface{}{
+				"parameter": []map[string]any{
 					{
 						"name": "output",
-						"part": []map[string]interface{}{
+						"part": []map[string]any{
 							{
 								"name":     "url",
 								"valueUrl": server.URL + "/output/Patient.ndjson",
@@ -455,9 +455,9 @@ func TestPipeline_DirectTORCHURL_EmptyResult(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" && r.URL.Path == resultPath {
 			// Return result with no output files
-			result := map[string]interface{}{
+			result := map[string]any{
 				"resourceType": "Parameters",
-				"parameter":    []map[string]interface{}{},
+				"parameter":    []map[string]any{},
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -510,7 +510,7 @@ func TestPipeline_DirectTORCHURL_EmptyResult(t *testing.T) {
 	assert.Equal(t, 0, updatedJob.TotalFiles, "Empty result should have zero files")
 }
 
-// T073: Integration test - verify polling timeout works correctly
+// Integration test - verify polling timeout works correctly
 // Note: This test uses the TORCHClient timeout mechanism directly to avoid long test runtimes
 // The full integration test with ExecuteImportStep would require waiting for the full timeout duration
 
@@ -522,13 +522,13 @@ func TestPipeline_TORCHExtraction_PollingTimeout(t *testing.T) {
 
 	// Create CRTDL file
 	crtdlPath := filepath.Join(tempDir, "timeout-test.crtdl")
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version":           "1.0.0",
-			"inclusionCriteria": []interface{}{},
+			"inclusionCriteria": []any{},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []interface{}{},
+		"dataExtraction": map[string]any{
+			"attributeGroups": []any{},
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)
@@ -617,7 +617,7 @@ func TestPipeline_TORCHExtraction_PollingTimeout(t *testing.T) {
 	t.Logf("For full timeout testing, see TestTORCHClient_PollExtractionStatus_Timeout in unit tests")
 }
 
-// T074: Integration test - verify job resumption after process restart during polling
+// Integration test - verify job resumption after process restart during polling
 
 func TestPipeline_TORCHExtraction_JobResumption(t *testing.T) {
 	// Setup
@@ -627,13 +627,13 @@ func TestPipeline_TORCHExtraction_JobResumption(t *testing.T) {
 
 	// Create CRTDL file
 	crtdlPath := filepath.Join(tempDir, "resumption-test.crtdl")
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version":           "1.0.0",
-			"inclusionCriteria": []interface{}{},
+			"inclusionCriteria": []any{},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []interface{}{},
+		"dataExtraction": map[string]any{
+			"attributeGroups": []any{},
 		},
 	}
 	crtdlJSON, _ := json.Marshal(crtdlContent)
@@ -663,12 +663,12 @@ func TestPipeline_TORCHExtraction_JobResumption(t *testing.T) {
 			}
 
 			// Return result
-			result := map[string]interface{}{
+			result := map[string]any{
 				"resourceType": "Parameters",
-				"parameter": []map[string]interface{}{
+				"parameter": []map[string]any{
 					{
 						"name": "output",
-						"part": []map[string]interface{}{
+						"part": []map[string]any{
 							{
 								"name":     "url",
 								"valueUrl": server.URL + "/output/resumed-data.ndjson",

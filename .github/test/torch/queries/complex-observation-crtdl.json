@@ -1,0 +1,95 @@
+{
+  "version": "http://json-schema.org/to-be-done/schema#",
+  "display": "Complex Observation with Hierarchical Paths - Performance Test",
+  "cohortDefinition": {
+    "version": "http://to_be_decided.com/draft-1/schema#",
+    "display": "All patients",
+    "inclusionCriteria": [
+      [
+        {
+          "termCodes": [
+            {
+              "code": "263495000",
+              "system": "http://snomed.info/sct",
+              "display": "Geschlecht"
+            }
+          ],
+          "context": {
+            "code": "Patient",
+            "system": "fdpg.mii.cds",
+            "version": "1.0.0",
+            "display": "Patient"
+          },
+          "valueFilter": {
+            "selectedConcepts": [
+              {
+                "code": "female",
+                "display": "Female",
+                "system": "http://hl7.org/fhir/administrative-gender"
+              },
+              {
+                "code": "male",
+                "display": "Male",
+                "system": "http://hl7.org/fhir/administrative-gender"
+              },
+              {
+                "code": "other",
+                "display": "Other",
+                "system": "http://hl7.org/fhir/administrative-gender"
+              },
+              {
+                "code": "unknown",
+                "display": "Unknown",
+                "system": "http://hl7.org/fhir/administrative-gender"
+              }
+            ],
+            "type": "concept"
+          }
+        }
+      ]
+    ]
+  },
+  "dataExtraction": {
+    "attributeGroups": [
+      {
+        "id": "complex-obs",
+        "groupReference": "https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab",
+        "attributes": [
+          {"attributeRef": "Observation.id", "mustHave": false},
+          {"attributeRef": "Observation.meta", "mustHave": false},
+          {"attributeRef": "Observation.meta.profile", "mustHave": false},
+          {"attributeRef": "Observation.status", "mustHave": false},
+          {"attributeRef": "Observation.category", "mustHave": false},
+          {"attributeRef": "Observation.category.coding", "mustHave": false},
+          {"attributeRef": "Observation.category.text", "mustHave": false},
+          {"attributeRef": "Observation.code", "mustHave": false},
+          {"attributeRef": "Observation.effective[x]", "mustHave": false},
+          {"attributeRef": "Observation.issued", "mustHave": false},
+          {"attributeRef": "Observation.value[x]", "mustHave": false},
+          {"attributeRef": "Observation.value[x]:valueQuantity", "mustHave": false},
+          {"attributeRef": "Observation.value[x]:valueQuantity.value", "mustHave": false},
+          {"attributeRef": "Observation.value[x]:valueQuantity.unit", "mustHave": false},
+          {"attributeRef": "Observation.value[x]:valueQuantity.system", "mustHave": false},
+          {"attributeRef": "Observation.value[x]:valueQuantity.code", "mustHave": false},
+          {"attributeRef": "Observation.dataAbsentReason", "mustHave": false},
+          {"attributeRef": "Observation.interpretation", "mustHave": false},
+          {"attributeRef": "Observation.note", "mustHave": false},
+          {"attributeRef": "Observation.bodySite", "mustHave": false},
+          {"attributeRef": "Observation.method", "mustHave": false},
+          {"attributeRef": "Observation.component", "mustHave": false},
+          {"attributeRef": "Observation.component.code", "mustHave": false},
+          {"attributeRef": "Observation.component.value[x]", "mustHave": false},
+          {"attributeRef": "Observation.component.dataAbsentReason", "mustHave": false},
+          {"attributeRef": "Observation.component.interpretation", "mustHave": false}
+        ]
+      },
+      {
+        "id": "pat",
+        "groupReference": "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient",
+        "attributes": [
+          {"attributeRef": "Patient.id", "mustHave": true}
+        ]
+      }
+    ]
+  }
+}

@@ -46,6 +46,7 @@ start:
 	@echo "Services running:"
 	@echo "  TORCH: Check port with 'docker compose port torch 8080'"
 	@echo "  DIMP:  http://localhost:8083/fhir"
+	@docker compose -f compose.yaml exec -T --user=root torch chown -R 1001:1001 /app/output
 
 ## stop: Stop all services
 stop:

@@ -291,7 +291,7 @@ func TestPipelineImportError_PathIsFile(t *testing.T) {
 
 	// Verify error
 	assert.Error(t, err, "Import should fail when path is a file")
-	assert.Contains(t, err.Error(), "not a directory", "Error should mention path is not a directory")
+	assert.Contains(t, err.Error(), "directory", "Error should mention directory issue")
 
 	// Verify step failed
 	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)

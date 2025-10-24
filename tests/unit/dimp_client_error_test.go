@@ -13,13 +13,13 @@ import (
 	"github.com/trobanga/aether/internal/services"
 )
 
-// T054: Unit test for DIMP client with error responses (4xx, 5xx)
+// Unit test for DIMP client with error responses (4xx, 5xx)
 
 func TestDIMPClient_Error_400BadRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]string{
 				"code":    "invalid_resource",
 				"message": "Missing required field: resourceType",
@@ -33,7 +33,7 @@ func TestDIMPClient_Error_400BadRequest(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	malformed := map[string]interface{}{
+	malformed := map[string]any{
 		"id": "no-type",
 	}
 
@@ -47,7 +47,7 @@ func TestDIMPClient_Error_422UnprocessableEntity(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]string{
 				"code":    "invalid_schema",
 				"message": "Does not conform to FHIR schema",
@@ -61,7 +61,7 @@ func TestDIMPClient_Error_422UnprocessableEntity(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	invalid := map[string]interface{}{
+	invalid := map[string]any{
 		"resourceType": "Patient",
 		"invalidField": "bad",
 	}
@@ -86,7 +86,7 @@ func TestDIMPClient_Error_500InternalServerError(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}
@@ -111,7 +111,7 @@ func TestDIMPClient_Error_502BadGateway(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}
@@ -136,7 +136,7 @@ func TestDIMPClient_Error_503ServiceUnavailable(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}
@@ -161,7 +161,7 @@ func TestDIMPClient_Error_504GatewayTimeout(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}
@@ -178,7 +178,7 @@ func TestDIMPClient_Error_NetworkFailure(t *testing.T) {
 	httpClient := services.NewHTTPClient(1*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 10, MaxBackoffMs: 100}, logger)
 	client := services.NewDIMPClient("http://192.0.2.1:9999", httpClient, logger) // Non-routable IP
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}
@@ -201,7 +201,7 @@ func TestDIMPClient_Error_InvalidJSON(t *testing.T) {
 	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 1, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
 	client := services.NewDIMPClient(server.URL, httpClient, logger)
 
-	resource := map[string]interface{}{
+	resource := map[string]any{
 		"resourceType": "Patient",
 		"id":           "test",
 	}

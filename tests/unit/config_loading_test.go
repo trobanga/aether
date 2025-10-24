@@ -444,7 +444,7 @@ jobs_dir: "` + jobsDir + `"
 	assert.Contains(t, err.Error(), "invalid parquet_conversion url")
 }
 
-// T007: Unit tests for TORCHConfig validation
+// Unit tests for TORCHConfig validation
 
 func TestTORCHConfig_ValidateSuccess(t *testing.T) {
 	t.Skip("TODO: TORCH config loading tests need debugging - config fields not populating from YAML")
@@ -1136,4 +1136,73 @@ func TestValidateServiceConnectivity_ParquetServiceUnreachable(t *testing.T) {
 	err := config.ValidateServiceConnectivity()
 	assert.Error(t, err, "Should fail when Parquet conversion service is unreachable")
 	assert.Contains(t, err.Error(), "Parquet Conversion")
+}
+
+// TestConfigLoading_BundleSplitThreshold verifies bundle_split_threshold_mb is loaded correctly
+func TestConfigLoading_BundleSplitThreshold(t *testing.T) {
+	tmpDir := t.TempDir()
+	configFile := filepath.Join(tmpDir, "config.yaml")
+	jobsDir := filepath.Join(tmpDir, "jobs")
+	_ = os.MkdirAll(jobsDir, 0755)
+
+	configContent := `
+services:
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 1
+
+pipeline:
+  enabled_steps:
+    - import
+    - dimp
+
+retry:
+  max_attempts: 5
+  initial_backoff_ms: 1000
+  max_backoff_ms: 30000
+
+jobs_dir: "` + jobsDir + `"
+`
+	err := os.WriteFile(configFile, []byte(configContent), 0644)
+	require.NoError(t, err)
+
+	config, err := services.LoadConfig(configFile)
+	require.NoError(t, err, "Config should load without error")
+
+	// Verify bundle split threshold is loaded correctly from DIMP config
+	assert.Equal(t, 1, config.Services.DIMP.BundleSplitThresholdMB, "bundle_split_threshold_mb should be 1")
+}
+
+// TestConfigLoading_BundleSplitThresholdDefault verifies default value when not specified
+func TestConfigLoading_BundleSplitThresholdDefault(t *testing.T) {
+	tmpDir := t.TempDir()
+	configFile := filepath.Join(tmpDir, "config.yaml")
+	jobsDir := filepath.Join(tmpDir, "jobs")
+	_ = os.MkdirAll(jobsDir, 0755)
+
+	configContent := `
+services:
+  dimp:
+    url: "http://localhost:32861/fhir"
+
+pipeline:
+  enabled_steps:
+    - import
+    - dimp
+
+retry:
+  max_attempts: 5
+  initial_backoff_ms: 1000
+  max_backoff_ms: 30000
+
+jobs_dir: "` + jobsDir + `"
+`
+	err := os.WriteFile(configFile, []byte(configContent), 0644)
+	require.NoError(t, err)
+
+	config, err := services.LoadConfig(configFile)
+	require.NoError(t, err, "Config should load without error")
+
+	// Verify bundle split threshold defaults to 10MB in DIMP config
+	assert.Equal(t, 10, config.Services.DIMP.BundleSplitThresholdMB, "bundle_split_threshold_mb should default to 10")
 }

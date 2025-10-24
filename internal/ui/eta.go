@@ -6,8 +6,8 @@ import (
 )
 
 // ETACalculator computes estimated time of arrival for operations
-// FR-029b: ETA = (total_items - processed_items) * avg_time_per_item
-// avg_time_per_item computed from last 10 items or last 30 seconds (whichever more recent)
+// Formula: ETA = (total_items - processed_items) * avg_time_per_item
+// Average time per item is computed from last 10 samples or last 30 seconds (whichever more recent)
 type ETACalculator struct {
 	samples       []TimestampedProgress
 	maxSamples    int           // Max number of samples to keep (default 10)
@@ -21,7 +21,7 @@ type TimestampedProgress struct {
 }
 
 // NewETACalculator creates an ETA calculator with default settings
-// FR-029b: Last 10 items or 30 second window
+// Uses last 10 samples or 30 second time window for averaging
 func NewETACalculator() *ETACalculator {
 	return &ETACalculator{
 		samples:       make([]TimestampedProgress, 0),
@@ -82,7 +82,7 @@ func (e *ETACalculator) pruneOldSamples(now time.Time) {
 //   - eta: estimated time remaining
 //   - valid: whether ETA can be reliably computed (need at least 2 samples)
 //
-// FR-029b formula: ETA = (total_items - processed_items) * avg_time_per_item
+// Formula: ETA = (total_items - processed_items) * avg_time_per_item
 func (e *ETACalculator) CalculateETA(totalItems int64, currentItems int64) (time.Duration, bool) {
 	if len(e.samples) < 2 {
 		return 0, false // Not enough data

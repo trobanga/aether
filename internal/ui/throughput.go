@@ -6,7 +6,7 @@ import (
 )
 
 // ThroughputCalculator tracks and calculates data processing rates
-// FR-029e: Display throughput rate (files/sec, MB/sec)
+// Displays throughput as items/sec and MB/sec for user feedback
 type ThroughputCalculator struct {
 	startTime        time.Time
 	totalItems       int64
@@ -84,7 +84,7 @@ func (t *ThroughputCalculator) GetInstantBytesPerSecond() float64 {
 }
 
 // FormatItemsPerSecond formats items/sec rate as human-readable string
-// FR-029e: Display format like "2.3 files/sec"
+// Example: "2.3 items/sec"
 func FormatItemsPerSecond(itemsPerSec float64) string {
 	if itemsPerSec < 0.01 {
 		return "< 0.01 items/sec"
@@ -93,7 +93,7 @@ func FormatItemsPerSecond(itemsPerSec float64) string {
 }
 
 // FormatBytesPerSecond formats bytes/sec rate as human-readable string
-// FR-029e: Display format like "5.2 MB/sec"
+// Example: "5.2 MB/sec"
 func FormatBytesPerSecond(bytesPerSec float64) string {
 	const (
 		KB = 1024

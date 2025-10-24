@@ -205,7 +205,7 @@ func TestPipelineImportURL_LargeFile(t *testing.T) {
 	assert.Equal(t, 10000, lineCount, "Should count 10000 resources")
 }
 
-// TestPipelineImportURL_ProgressDisplay verifies progress indicators are used (FR-029)
+// TestPipelineImportURL_ProgressDisplay verifies progress indicators are used (progress indicator requirements)
 func TestPipelineImportURL_ProgressDisplay(t *testing.T) {
 	// Create test content
 	testContent := make([]byte, 50000) // 50KB
@@ -242,7 +242,7 @@ func TestPipelineImportURL_ProgressDisplay(t *testing.T) {
 	job, _ := pipeline.CreateJob(server.URL+"/data.ndjson", config, logger)
 	startedJob := pipeline.StartJob(job)
 
-	// This should use progress bar/spinner internally (FR-029c, FR-029d)
+	// This should use progress bar/spinner internally (progress indicator requirementsc, Progress indicators must update at least every 2 seconds)
 	importedJob, err := pipeline.ExecuteImportStep(startedJob, logger, httpClient, true)
 
 	require.NoError(t, err, "Import should succeed")

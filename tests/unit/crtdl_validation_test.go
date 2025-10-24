@@ -12,7 +12,7 @@ import (
 	"github.com/trobanga/aether/internal/lib"
 )
 
-// T009: Unit tests for CRTDL syntax validation
+// Unit tests for CRTDL syntax validation
 
 func TestValidateCRTDLSyntax_ValidMinimal(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -360,21 +360,21 @@ func TestValidateCRTDLSyntax_EmptyStructuresValid(t *testing.T) {
 	t.Skip("Skipping until validation.ValidateCRTDLSyntax() is implemented")
 }
 
-// T072: Performance test - verify CRTDL validation < 1 second
+// Performance test - verify CRTDL validation < 1 second
 
 func TestValidateCRTDLSyntax_PerformanceWithin1Second(t *testing.T) {
 	tmpDir := t.TempDir()
 	crtdlFile := filepath.Join(tmpDir, "performance_test.crtdl")
 
 	// Create a realistic CRTDL file with moderate complexity (simulating real-world usage)
-	crtdlContent := map[string]interface{}{
-		"cohortDefinition": map[string]interface{}{
+	crtdlContent := map[string]any{
+		"cohortDefinition": map[string]any{
 			"version": "1.0.0",
 			"display": "Performance test cohort",
-			"inclusionCriteria": []map[string]interface{}{
+			"inclusionCriteria": []map[string]any{
 				// Add 100 criteria groups to test with realistic complexity
 				{
-					"criteriaGroup": []map[string]interface{}{
+					"criteriaGroup": []map[string]any{
 						{
 							"code":    "8310-5",
 							"system":  "http://loinc.org",
@@ -383,7 +383,7 @@ func TestValidateCRTDLSyntax_PerformanceWithin1Second(t *testing.T) {
 					},
 				},
 				{
-					"criteriaGroup": []map[string]interface{}{
+					"criteriaGroup": []map[string]any{
 						{
 							"code":    "8462-4",
 							"system":  "http://loinc.org",
@@ -393,8 +393,8 @@ func TestValidateCRTDLSyntax_PerformanceWithin1Second(t *testing.T) {
 				},
 			},
 		},
-		"dataExtraction": map[string]interface{}{
-			"attributeGroups": []map[string]interface{}{
+		"dataExtraction": map[string]any{
+			"attributeGroups": []map[string]any{
 				{
 					"name":         "demographics",
 					"resourceType": "Patient",
