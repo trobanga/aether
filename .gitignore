@@ -50,5 +50,10 @@ coverage.html
 node_modules/
 package-lock.json
 
-# VitePress build output
+# Node.js cache
+.npm/
+.cache/
+
+# VitePress build output and cache
 docs/.vitepress/dist/
+docs/.vitepress/cache/
