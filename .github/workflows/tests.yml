@@ -8,6 +8,8 @@ on:
       - 'docs/**'
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - 'docs/**'
   merge_group:
   branch_protection_rule:
   schedule:
