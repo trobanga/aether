@@ -1,6 +1,6 @@
 # DIMP Pseudonymization
 
-DIMP (Data Integration and Management Platform) provides de-identification and pseudonymization services for FHIR healthcare data, protecting patient privacy while preserving data utility for research.
+DIMP (Data Integration and Management Platform) provides de-identification and pseudonymization services for FHIR healthcare data using the **FHIR Pseudonymizer**, protecting patient privacy while preserving data utility for research.
 
 ## Overview
 
@@ -26,15 +26,21 @@ Add the DIMP service URL to `aether.yaml`:
 
 ```yaml
 services:
-  dimp_url: "http://localhost:8083/fhir"
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 ```
 
 For production environments:
 
 ```yaml
 services:
-  dimp_url: "https://dimp.healthcare.org/api/fhir"
+  dimp:
+    url: "https://dimp.healthcare.org/fhir"
+    bundle_split_threshold_mb: 50
 ```
+
+The `bundle_split_threshold_mb` setting controls automatic splitting of large FHIR Bundles to prevent HTTP 413 errors when sending to DIMP (range: 1-100 MB).
 
 ### 2. Enable DIMP in Pipeline
 
@@ -51,7 +57,9 @@ The order matters: DIMP should run after data import.
 
 ```yaml
 services:
-  dimp_url: "http://localhost:8083/fhir"
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 
 pipeline:
   enabled_steps:
@@ -63,8 +71,7 @@ retry:
   initial_backoff_ms: 1000
   max_backoff_ms: 30000
 
-jobs:
-  jobs_dir: "./jobs"
+jobs_dir: "./jobs"
 ```
 
 ## How Pseudonymization Works
@@ -177,16 +184,24 @@ services:
     base_url: "https://torch.hospital.org"
     username: "researcher"
     password: "secret"
-  dimp_url: "http://localhost:8083/fhir"
+    extraction_timeout_minutes: 30
+    polling_interval_seconds: 5
+    max_polling_interval_seconds: 30
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 
 pipeline:
   enabled_steps:
-    - torch   # Extract from TORCH
-    - import  # Import extracted data
+    - import  # Import extracted TORCH data
     - dimp    # Pseudonymize
 
-jobs:
-  jobs_dir: "./jobs"
+retry:
+  max_attempts: 5
+  initial_backoff_ms: 1000
+  max_backoff_ms: 30000
+
+jobs_dir: "./jobs"
 ```
 
 Run:
@@ -195,7 +210,7 @@ Run:
 aether pipeline start my_cohort.crtdl
 ```
 
-This automatically extracts data from TORCH and applies pseudonymization.
+This automatically extracts data from TORCH and applies pseudonymization via FHIR Pseudonymizer.
 
 ## Best Practices
 

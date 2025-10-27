@@ -9,16 +9,32 @@ Create an `aether.yaml` file in your project directory:
 ```yaml
 # Service endpoints
 services:
-  dimp_url: "http://localhost:8083/fhir"
-  csv_conversion_url: "http://localhost:9000/convert/csv"
-  parquet_conversion_url: "http://localhost:9000/convert/parquet"
+  # TORCH FHIR server (optional)
   torch:
-    base_url: "http://torch.hospital.org"
-    username: "your-username"
-    password: "your-password"
+    base_url: "http://localhost:8080"
+    file_server_url: "http://localhost:8082"
+    username: "researcher"
+    password: "password"
+    extraction_timeout_minutes: 30
+    polling_interval_seconds: 5
+    max_polling_interval_seconds: 30
+
+  # DIMP Pseudonymization (optional)
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
+
+  # CSV Conversion Service (optional)
+  csv_conversion:
+    url: "http://localhost:9000/convert/csv"
+
+  # Parquet Conversion Service (optional)
+  parquet_conversion:
+    url: "http://localhost:9000/convert/parquet"
 
 # Pipeline configuration
 pipeline:
+  # NOTE: import must always be the first step
   enabled_steps:
     - import
     - dimp
@@ -32,9 +48,8 @@ retry:
   initial_backoff_ms: 1000
   max_backoff_ms: 30000
 
-# Job state and data storage
-jobs:
-  jobs_dir: "./jobs"
+# Job state and data storage directory
+jobs_dir: "./jobs"
 ```
 
 ## Configuration Options
@@ -44,15 +59,20 @@ jobs:
 **DIMP Pseudonymization:**
 ```yaml
 services:
-  dimp_url: "http://localhost:8083/fhir"
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 ```
-Endpoint for de-identification and pseudonymization service.
+- `url`: FHIR Pseudonymizer endpoint
+- `bundle_split_threshold_mb`: Auto-split large bundles (1-100 MB, default: 10 MB)
 
 **Data Conversion Services:**
 ```yaml
 services:
-  csv_conversion_url: "http://localhost:9000/convert/csv"
-  parquet_conversion_url: "http://localhost:9000/convert/parquet"
+  csv_conversion:
+    url: "http://localhost:9000/convert/csv"
+  parquet_conversion:
+    url: "http://localhost:9000/convert/parquet"
 ```
 Endpoints for converting FHIR data to other formats (CSV, Parquet).
 
@@ -61,10 +81,19 @@ Endpoints for converting FHIR data to other formats (CSV, Parquet).
 services:
   torch:
     base_url: "http://torch.hospital.org"
+    file_server_url: "http://localhost:8082"
     username: "researcher-name"
     password: "secure-password"
+    extraction_timeout_minutes: 30
+    polling_interval_seconds: 5
+    max_polling_interval_seconds: 30
 ```
-Credentials for TORCH FHIR server integration.
+Credentials and configuration for TORCH FHIR server integration:
+- `base_url`: TORCH API endpoint
+- `file_server_url`: File download server (default: uses base_url)
+- `extraction_timeout_minutes`: Max wait for extraction (default: 30)
+- `polling_interval_seconds`: Initial poll interval (default: 5)
+- `max_polling_interval_seconds`: Max poll interval (default: 30)
 
 ### Pipeline Section
 
@@ -114,15 +143,21 @@ Process FHIR NDJSON files from a local directory with pseudonymization:
 ```yaml
 # aether.yaml
 services:
-  dimp_url: "http://localhost:8083/fhir"
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 
 pipeline:
   enabled_steps:
     - import
     - dimp
 
-jobs:
-  jobs_dir: "./jobs"
+retry:
+  max_attempts: 5
+  initial_backoff_ms: 1000
+  max_backoff_ms: 30000
+
+jobs_dir: "./jobs"
 ```
 
 Run:
@@ -132,25 +167,33 @@ aether pipeline start /path/to/fhir/files/
 
 ### TORCH Extraction with DIMP Pseudonymization
 
-Extract minimized data from TORCH using a CRTDL query, then apply pseudonymization via DIMP:
+Extract minimized data from TORCH using a CRTDL query, then apply pseudonymization via FHIR Pseudonymizer:
 
 ```yaml
 # aether.yaml
 services:
   torch:
     base_url: "http://torch.hospital.org"
+    file_server_url: "http://localhost:8082"
     username: "researcher"
     password: "secret"
-  dimp_url: "http://localhost:8083/fhir"
+    extraction_timeout_minutes: 30
+    polling_interval_seconds: 5
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 
 pipeline:
   enabled_steps:
-    - torch      # Extract from TORCH
     - import     # Import extracted data
     - dimp       # Pseudonymize
 
-jobs:
-  jobs_dir: "./jobs"
+retry:
+  max_attempts: 5
+  initial_backoff_ms: 1000
+  max_backoff_ms: 30000
+
+jobs_dir: "./jobs"
 ```
 
 Run:
