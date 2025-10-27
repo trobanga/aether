@@ -5,7 +5,7 @@
 # Project metadata
 PROJECT_NAME := aether
 BINARY_NAME := aether
-VERSION := 1.0.0
+VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "1.0.0")
 BUILD_DIR := bin
 MAIN_PATH := cmd/aether/main.go
 
@@ -25,7 +25,7 @@ LDFLAGS := -ldflags "-X main.Version=$(VERSION)"
 PLATFORMS := linux darwin
 ARCHITECTURES := amd64 arm64
 
-.PHONY: all build build-all clean test test-unit test-integration test-contract coverage fmt vet install help
+.PHONY: all build build-all build-linux build-mac build-mac-arm build-windows build-windows-arm clean test test-unit test-integration test-contract coverage fmt vet install help release
 
 # Default target
 all: clean fmt vet test build
@@ -70,8 +70,22 @@ build-mac-arm:
 	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64"
 
+## build-windows: Build binary for Windows (amd64)
+build-windows:
+	@echo "Building $(BINARY_NAME) for Windows amd64..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
+	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe"
+
+## build-windows-arm: Build binary for Windows (arm64)
+build-windows-arm:
+	@echo "Building $(BINARY_NAME) for Windows arm64..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=windows GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe $(MAIN_PATH)
+	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe"
+
 ## build-all: Build binaries for all platforms
-build-all: build-linux build-mac build-mac-arm
+build-all: build-linux build-mac build-mac-arm build-windows build-windows-arm
 	@echo "All platform builds complete"
 
 ## clean: Remove build artifacts and test data
@@ -190,6 +204,8 @@ release: clean build-all
 	cd $(BUILD_DIR) && tar -czf release/$(BINARY_NAME)-$(VERSION)-linux-amd64.tar.gz $(BINARY_NAME)-linux-amd64
 	cd $(BUILD_DIR) && tar -czf release/$(BINARY_NAME)-$(VERSION)-darwin-amd64.tar.gz $(BINARY_NAME)-darwin-amd64
 	cd $(BUILD_DIR) && tar -czf release/$(BINARY_NAME)-$(VERSION)-darwin-arm64.tar.gz $(BINARY_NAME)-darwin-arm64
+	cd $(BUILD_DIR) && zip -q release/$(BINARY_NAME)-$(VERSION)-windows-amd64.zip $(BINARY_NAME)-windows-amd64.exe
+	cd $(BUILD_DIR) && zip -q release/$(BINARY_NAME)-$(VERSION)-windows-arm64.zip $(BINARY_NAME)-windows-arm64.exe
 	@echo "Release packages created in $(BUILD_DIR)/release/"
 
 ## check: Run all checks (fmt, vet, test)
