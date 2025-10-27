@@ -124,15 +124,14 @@ retry:
 
 Exponential backoff is applied between retries for transient errors.
 
-### Jobs Section
+### Jobs Directory
 
 **Job Storage:**
 ```yaml
-jobs:
-  jobs_dir: "./jobs"
+jobs_dir: "./jobs"
 ```
 
-Directory where Aether stores job state and processed data. Must be writable.
+Directory where Aether stores job state and processed data. Must be writable. Each job gets a UUID subdirectory containing state and processed data.
 
 ## Usage Examples
 

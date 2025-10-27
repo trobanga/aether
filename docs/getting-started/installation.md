@@ -115,6 +115,20 @@ Then reload your shell:
 exec bash
 ```
 
+### For Fish or Other Shells
+
+For comprehensive shell completion setup for fish, bash, zsh, and other shells:
+
+```bash
+./scripts/install-completions.sh
+```
+
+Or see manual instructions:
+
+```bash
+aether completion --help
+```
+
 ## Next Steps
 
 - [Quick Start Guide](./quick-start.md) - Get started with your first pipeline

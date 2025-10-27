@@ -2,6 +2,13 @@
 
 Get up and running with Aether in just a few minutes.
 
+## Prerequisites
+
+Before starting, ensure you have:
+- **Aether installed** - See [Installation Guide](./installation.md)
+- **Go 1.21+** (if building from source)
+- **Optional**: TORCH server access or DIMP service (for advanced features)
+
 ## 5-Minute Setup
 
 ### 1. Verify Installation
@@ -16,6 +23,19 @@ You should see the Aether CLI help output.
 
 Create `aether.yaml` in your project directory:
 
+For basic local testing (no external services):
+
+```yaml
+# aether.yaml
+pipeline:
+  enabled_steps:
+    - import
+
+jobs_dir: "./jobs"
+```
+
+For local FHIR data with pseudonymization:
+
 ```yaml
 # aether.yaml
 pipeline:
@@ -26,19 +46,32 @@ pipeline:
 services:
   dimp_url: "http://localhost:8083/fhir"
 
-jobs:
-  jobs_dir: "./jobs"
+jobs_dir: "./jobs"
 ```
 
-### 3. Run a Pipeline
+### 3. Run Your First Pipeline
 
-**From local FHIR files:**
+**Option A: Process local FHIR data**
+
+Create a test data directory:
 
 ```bash
-aether pipeline start /path/to/fhir/files/
+mkdir -p test-data
 ```
 
-**From TORCH with CRTDL query:**
+Start a pipeline:
+
+```bash
+aether pipeline start ./test-data/
+```
+
+**Option B: From HTTP URL**
+
+```bash
+aether pipeline start https://fhir.server.org/export/Patient.ndjson
+```
+
+**Option C: From TORCH with CRTDL query**
 
 First, set TORCH credentials in `aether.yaml`:
 
@@ -65,8 +98,8 @@ aether job list
 # Check specific job status
 aether pipeline status <job-id>
 
-# Watch for errors or details
-aether job logs <job-id>
+# Continue a stopped pipeline
+aether pipeline continue <job-id>
 ```
 
 ## Common Use Cases

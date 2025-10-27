@@ -92,34 +92,34 @@
 
 **Content Migration from Existing Sources**:
 
-- [ ] T026 [US2] Extract and migrate installation/quick-start content from current README.md to `docs/getting-started/` pages
-- [ ] T027 [US2] Extract and migrate configuration examples from README.md to `docs/getting-started/configuration.md`
-- [ ] T028 [US2] Extract and migrate TORCH integration content from `specs/002-import-via-torch/quickstart.md` to `docs/guides/torch-integration.md`
-- [ ] T029 [US2] Extract and migrate DIMP content from README.md and existing docs to `docs/guides/dimp-pseudonymization.md`
-- [ ] T030 [US2] Extract and migrate pipeline overview content to `docs/guides/pipeline-steps.md`
-- [ ] T031 [US2] Extract and migrate CLI commands from current documentation to `docs/api-reference/cli-commands.md`
-- [ ] T032 [US2] Extract and migrate configuration reference to `docs/api-reference/config-reference.md`
-- [ ] T033 [US2] Extract and migrate architecture documentation to `docs/development/architecture.md`
-- [ ] T034 [US2] Extract and migrate testing guidance to `docs/development/testing.md`
-- [ ] T035 [US2] Extract and migrate contributing workflow to `docs/development/contributing.md`
-- [ ] T036 [US2] Extract and migrate coding guidelines to `docs/development/coding-guidelines.md`
+- [x] T026 [US2] Extract and migrate installation/quick-start content from current README.md to `docs/getting-started/` pages
+- [x] T027 [US2] Extract and migrate configuration examples from README.md to `docs/getting-started/configuration.md`
+- [x] T028 [US2] Extract and migrate TORCH integration content from `specs/002-import-via-torch/quickstart.md` to `docs/guides/torch-integration.md`
+- [x] T029 [US2] Extract and migrate DIMP content from README.md and existing docs to `docs/guides/dimp-pseudonymization.md`
+- [x] T030 [US2] Extract and migrate pipeline overview content to `docs/guides/pipeline-steps.md`
+- [x] T031 [US2] Extract and migrate CLI commands from current documentation to `docs/api-reference/cli-commands.md`
+- [x] T032 [US2] Extract and migrate configuration reference to `docs/api-reference/config-reference.md`
+- [x] T033 [US2] Extract and migrate architecture documentation to `docs/development/architecture.md`
+- [x] T034 [US2] Extract and migrate testing guidance to `docs/development/testing.md`
+- [x] T035 [US2] Extract and migrate contributing workflow to `docs/development/contributing.md`
+- [x] T036 [US2] Extract and migrate coding guidelines to `docs/development/coding-guidelines.md`
 
 **Link Update & Validation**:
 
-- [ ] T037 [US2] Audit all old README.md links and update references to point to new VitePress pages
-- [ ] T038 [US2] Update all cross-references between documentation pages to use correct markdown link format per contract
-- [ ] T039 [US2] Validate all anchor links (#section-titles) match actual headings in target files
-- [ ] T040 [US2] Run comprehensive link validation script (all internal, anchor, and external links)
-- [ ] T041 [US2] Verify zero broken links in built site with `npm run docs:build` in `docs/`
+- [x] T037 [US2] Audit all old README.md links and update references to point to new VitePress pages
+- [x] T038 [US2] Update all cross-references between documentation pages to use correct markdown link format per contract
+- [x] T039 [US2] Validate all anchor links (#section-titles) match actual headings in target files
+- [x] T040 [US2] Run comprehensive link validation script (all internal, anchor, and external links)
+- [x] T041 [US2] Verify zero broken links in built site with `npm run docs:build` in `docs/`
 
 **Content Organization & Navigation**:
 
-- [ ] T042 [US2] Create clear user role taxonomy (end-user, developer, operator) and organize sidebar accordingly
-- [ ] T043 [US2] Update VitePress sidebar config in `docs/.vitepress/config.ts` to reflect final content organization
-- [ ] T044 [US2] Create quick navigation links on home page (`docs/index.md`) for common user journeys
-- [ ] T045 [US2] Test sidebar navigation - verify all sections and pages accessible in 2 clicks or fewer
-- [ ] T046 [US2] Test search functionality - verify search finds pages by keywords (e.g., "TORCH", "installation", "configuration")
-- [ ] T047 [US2] Verify all code examples render correctly with proper syntax highlighting
+- [x] T042 [US2] Create clear user role taxonomy (end-user, developer, operator) and organize sidebar accordingly
+- [x] T043 [US2] Update VitePress sidebar config in `docs/.vitepress/config.ts` to reflect final content organization
+- [x] T044 [US2] Create quick navigation links on home page (`docs/index.md`) for common user journeys
+- [x] T045 [US2] Test sidebar navigation - verify all sections and pages accessible in 2 clicks or fewer
+- [x] T046 [US2] Test search functionality - verify search finds pages by keywords (e.g., "TORCH", "installation", "configuration")
+- [x] T047 [US2] Verify all code examples render correctly with proper syntax highlighting
 
 **Checkpoint**: ✅ User Story 2 complete - All documentation migrated, organized by role, with zero broken links
 
@@ -336,20 +336,23 @@ With multiple developers:
 ## Task Completion Tracking
 
 **Total Tasks**: 75
+**Completed**: 54/75 (72%)
+
 **By Phase**:
-- Phase 1 (Setup): 5 tasks
-- Phase 2 (Foundational): 7 tasks
-- Phase 3 (US1): 13 tasks
-- Phase 4 (US2): 22 tasks
-- Phase 5 (US3): 16 tasks
-- Phase 6 (Polish): 12 tasks
+- Phase 1 (Setup): 5/5 tasks ✅ COMPLETE
+- Phase 2 (Foundational): 7/7 tasks ✅ COMPLETE
+- Phase 3 (US1): 13/13 tasks ✅ COMPLETE
+- Phase 4 (US2): 22/22 tasks ✅ COMPLETE
+- Phase 5 (US3): 7/16 tasks (44% complete) - Workflow setup done, deployment testing pending
+- Phase 6 (Polish): 0/12 tasks (pending)
 
 **By Parallelization**:
 - [P] Parallelizable: 28 tasks
 - Sequential: 47 tasks
 
-**MVP Scope** (Phase 1 + 2 + 3): 25 tasks = ~2-3 days effort
-**Full Scope** (All phases): 75 tasks = ~1 week effort
+**MVP Scope** (Phase 1 + 2 + 3): 25/25 tasks ✅ COMPLETE
+**Current Scope** (Phase 1-5 partial): 54/54 tasks ✅ COMPLETE
+**Full Scope** (All phases): 75 tasks (21 pending)
 
 ---
 

@@ -120,7 +120,9 @@ aether pipeline start query.crtdl
 **Configuration**:
 ```yaml
 services:
-  dimp_url: "http://localhost:8083/fhir"
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 
 pipeline:
   enabled_steps:
@@ -281,7 +283,7 @@ Resume without reprocessing completed steps:
 aether job list
 
 # Resume from where it failed
-aether pipeline resume <job-id>
+aether pipeline continue <job-id>
 
 # The pipeline will skip already-completed steps
 ```

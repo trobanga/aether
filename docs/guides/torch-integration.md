@@ -4,11 +4,16 @@ TORCH is a FHIR server for clinical research data. Aether can directly extract d
 
 ## Overview
 
-TORCH Integration allows you to:
+**What is TORCH?**
+
+TORCH is a FHIR-based data extraction service that allows researchers to define patient cohorts using CRTDL query files and retrieve matching FHIR data automatically.
+
+**TORCH Integration allows you to:**
 - Query cohorts from TORCH FHIR servers using standardized CRTDL queries
 - Automatically extract patient data based on clinical criteria with data minimization
 - Import extracted FHIR resources into Aether for processing
 - Combine with DIMP for pseudonymization of sensitive data (optional)
+- Resume and reprocess previously extracted data
 
 ## Prerequisites
 
@@ -76,6 +81,48 @@ A CRTDL query file defines the cohort selection criteria. Example:
 }
 ```
 
+## Input Methods
+
+Aether supports multiple ways to work with TORCH data:
+
+### 1. **CRTDL File Extraction** (recommended for new queries)
+
+Submit a CRTDL file to TORCH and automatically download results:
+
+```bash
+aether pipeline start cohort-query.crtdl
+```
+
+Aether will:
+1. Connect to the configured TORCH server
+2. Submit the CRTDL query
+3. Poll extraction status until complete
+4. Download resulting FHIR NDJSON files
+5. Continue with pipeline processing
+
+### 2. **TORCH Result URL** (for reusing existing extractions)
+
+Skip extraction and download files directly from a TORCH result URL:
+
+```bash
+aether pipeline start http://localhost:8080/fhir/result/abc123
+```
+
+This is useful for:
+- Resuming or reprocessing previously extracted data
+- Sharing extraction results with other researchers
+- Testing pipeline changes on existing data
+
+### 3. **Backward Compatibility**
+
+Existing workflows using local directories or HTTP URLs continue to work:
+
+```bash
+# Still supported
+aether pipeline start ./test-data/
+aether pipeline start https://example.com/fhir/export
+```
+
 ## Using TORCH Integration
 
 ### Basic TORCH Query
@@ -85,13 +132,6 @@ Run a simple query to extract data from TORCH:
 ```bash
 aether pipeline start my_cohort.crtdl
 ```
-
-Aether will:
-1. Connect to the configured TORCH server
-2. Execute the CRTDL query to identify matching patients
-3. Extract all FHIR resources for those patients
-4. Import the data into Aether
-5. Apply any enabled pipeline steps
 
 ### With Pseudonymization
 
@@ -196,6 +236,51 @@ Extract patients on specific medications:
 }
 ```
 
+## Advanced Configuration
+
+### Extraction Timeout
+
+Configure how long Aether waits for TORCH extractions to complete:
+
+```yaml
+services:
+  torch:
+    base_url: "https://torch.hospital.org"
+    username: "researcher"
+    password: "secret"
+    extraction_timeout_minutes: 30    # Default: 30
+    polling_interval_seconds: 5        # Default: 5
+    max_polling_interval_seconds: 30   # Default: 30
+```
+
+- `extraction_timeout_minutes`: Maximum wait time for extraction (adjust for large cohorts)
+- `polling_interval_seconds`: Initial poll interval (increases exponentially up to max)
+- `max_polling_interval_seconds`: Maximum poll interval between checks
+
+### File Server Configuration
+
+If your TORCH has a separate file download server:
+
+```yaml
+services:
+  torch:
+    base_url: "https://torch.hospital.org"
+    file_server_url: "http://torch-files.hospital.org"
+    username: "researcher"
+    password: "secret"
+```
+
+## Error Handling
+
+Aether implements robust error handling for TORCH operations:
+
+- **Server unreachable**: Clear error within 5 seconds
+- **Authentication failure**: Fails early with credential error
+- **Extraction timeout**: Configurable timeout (default 30 minutes)
+- **Empty results**: Gracefully handles zero-patient cohorts
+- **Malformed CRTDL**: Validates syntax before submission
+- **Connection lost during download**: Automatic retry with exponential backoff
+
 ## Troubleshooting
 
 ### "TORCH server unreachable"
@@ -207,16 +292,31 @@ Extract patients on specific medications:
 - Verify username and password in configuration
 - Ensure credentials have appropriate permissions on TORCH server
 - Check for password expiration or account lockout
+- Verify you have access to the TORCH system
 
 ### "CRTDL query syntax error"
-- Validate CRTDL query file syntax
+- Validate CRTDL query file syntax (should be valid JSON)
 - Check field names and data types match TORCH schema
 - Review TORCH documentation for query syntax
+- Test query manually on TORCH interface
 
 ### "No patients matched"
 - Review cohort inclusion/exclusion criteria
 - Verify TORCH server contains matching data
 - Test query manually on TORCH interface
+- Ensure query criteria are not too restrictive
+
+### "Extraction takes longer than expected"
+- Large cohorts may need higher `extraction_timeout_minutes`
+- Check TORCH server logs for processing status
+- Verify network connectivity remains stable
+- Consider splitting into smaller cohorts
+
+### "How long do TORCH extractions take?"
+- Depends on cohort size and server load
+- Aether polls every 5 seconds (configurable) with default 30-minute timeout
+- Large cohorts may need a higher timeout in configuration
+- Monitor progress with `aether job list` and `aether pipeline status <job-id>`
 
 ## Next Steps
 

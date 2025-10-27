@@ -4,13 +4,18 @@ DIMP (Data Integration and Management Platform) provides de-identification and p
 
 ## Overview
 
-DIMP integration in Aether enables you to:
+**What is DIMP?**
+
+DIMP (Data Integration and Management Platform) provides de-identification and pseudonymization services for FHIR healthcare data using the **FHIR Pseudonymizer**, protecting patient privacy while preserving data utility for research.
+
+**DIMP integration in Aether enables you to:**
 
 - **De-identify** sensitive patient information (names, addresses, birthdates, etc.)
 - **Pseudonymize** records with consistent, reversible identifiers
 - **Maintain data utility** for research purposes
 - **Comply** with healthcare privacy regulations (GDPR, HIPAA, etc.)
 - **Generate** audit trails of all modifications
+- **Scale** pseudonymization for large datasets automatically
 
 ## Prerequisites
 
@@ -132,15 +137,16 @@ ls /data/fhir/*.ndjson
 
 ```yaml
 services:
-  dimp_url: "http://localhost:8083/fhir"
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 
 pipeline:
   enabled_steps:
     - import
     - dimp
 
-jobs:
-  jobs_dir: "./jobs"
+jobs_dir: "./jobs"
 ```
 
 3. **Run the pipeline:**
@@ -174,6 +180,20 @@ jobs/
     └── dimp_results.ndjson   # De-identified data
 ```
 
+### Understanding TORCH vs DIMP
+
+**TORCH** (Data extraction service):
+- Extracts FHIR data from TORCH servers based on CRTDL queries
+- Applies **TORCH minimization** (extracts only needed fields)
+- Returns raw identifiable data
+
+**DIMP** (De-identification service):
+- Applies **DIMP pseudonymization** (removes/replaces PII)
+- De-identifies already-extracted data
+- Returns pseudonymized, de-identified data
+
+**Combined workflow**: Extract with TORCH → Pseudonymize with DIMP
+
 ### TORCH + DIMP Workflow
 
 Combine TORCH extraction with pseudonymization:
@@ -193,8 +213,8 @@ services:
 
 pipeline:
   enabled_steps:
-    - import  # Import extracted TORCH data
-    - dimp    # Pseudonymize
+    - import  # Import extracted TORCH data (minimized but identifiable)
+    - dimp    # Apply DIMP pseudonymization (de-identify)
 
 retry:
   max_attempts: 5
@@ -210,7 +230,14 @@ Run:
 aether pipeline start my_cohort.crtdl
 ```
 
-This automatically extracts data from TORCH and applies pseudonymization via FHIR Pseudonymizer.
+This automatically:
+1. Extracts data from TORCH using CRTDL query
+2. Applies TORCH minimization (extracts only specified fields)
+3. Imports the minimized data
+4. Applies DIMP pseudonymization (removes/replaces PII)
+5. Outputs de-identified, pseudonymized data
+
+This provides **defense-in-depth** privacy: TORCH minimization reduces initial exposure, DIMP pseudonymization provides additional privacy protection.
 
 ## Best Practices
 

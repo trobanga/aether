@@ -9,13 +9,21 @@ For an introduction, see [Configuration Guide](../getting-started/configuration.
 ```yaml
 # Service endpoints
 services:
-  dimp_url: string              # DIMP pseudonymization service
-  csv_conversion_url: string    # CSV conversion service (future)
-  parquet_conversion_url: string # Parquet conversion service (future)
+  dimp:
+    url: string                 # DIMP pseudonymization service URL
+    bundle_split_threshold_mb: integer # Bundle size threshold (1-100, default: 10)
+  csv_conversion:
+    url: string                 # CSV conversion service URL (future)
+  parquet_conversion:
+    url: string                 # Parquet conversion service URL (future)
   torch:
     base_url: string            # TORCH FHIR server URL
+    file_server_url: string     # TORCH file server URL (optional)
     username: string            # TORCH username
     password: string            # TORCH password
+    extraction_timeout_minutes: integer # Timeout for extractions (default: 30)
+    polling_interval_seconds: integer # Initial poll interval (default: 5)
+    max_polling_interval_seconds: integer # Max poll interval (default: 30)
 
 # Pipeline configuration
 pipeline:
@@ -29,30 +37,38 @@ retry:
   max_backoff_ms: integer       # Maximum backoff in milliseconds (default: 30000)
 
 # Job configuration
-jobs:
-  jobs_dir: string              # Directory for job state and data (default: ./jobs)
+jobs_dir: string                # Directory for job state and data (default: ./jobs)
 ```
 
 ## Service Options
 
-### DIMP URL
+### DIMP Configuration
 
-**Key**: `services.dimp_url`
-**Type**: String (URL)
+**Key**: `services.dimp`
+**Type**: Object
 **Required**: Yes (if DIMP step enabled)
 **Default**: None
 
-Endpoint for DIMP de-identification service.
+Configuration for DIMP de-identification service.
+
+**Nested Options:**
+
+- `url` (String): DIMP service endpoint
+- `bundle_split_threshold_mb` (Integer): Auto-split large bundles (1-100 MB, default: 10)
 
 ```yaml
 services:
-  dimp_url: "http://localhost:8083/fhir"
+  dimp:
+    url: "http://localhost:32861/fhir"
+    bundle_split_threshold_mb: 10
 ```
 
 For production:
 ```yaml
 services:
-  dimp_url: "https://dimp.prod.healthcare.org/api/fhir"
+  dimp:
+    url: "https://dimp.prod.healthcare.org/api/fhir"
+    bundle_split_threshold_mb: 50
 ```
 
 ### CSV Conversion URL

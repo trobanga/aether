@@ -76,13 +76,13 @@ aether pipeline status abc123
 aether pipeline status --json abc123
 ```
 
-### aether pipeline resume
+### aether pipeline continue
 
 Resume a failed pipeline from where it stopped.
 
 **Syntax:**
 ```bash
-aether pipeline resume [options] <job-id>
+aether pipeline continue [options] <job-id>
 ```
 
 **Arguments:**
@@ -91,15 +91,14 @@ aether pipeline resume [options] <job-id>
 **Options:**
 - `--config, -c FILE` - Configuration file
 - `--jobs-dir DIR` - Override jobs directory
-- `--from-step STEP` - Resume from specific step (default: next failed step)
 
 **Examples:**
 ```bash
 # Resume failed job
-aether pipeline resume abc123
+aether pipeline continue abc123
 
-# Resume from specific step
-aether pipeline resume --from-step dimp abc123
+# Resume with specific configuration
+aether pipeline continue --config prod.yaml abc123
 ```
 
 ### aether job list
