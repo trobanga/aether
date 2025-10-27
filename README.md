@@ -522,24 +522,6 @@ jobs_dir: "./jobs"
 
 ## Development
 
-### Architecture & Testing Strategy
-
-**Core Principles:**
-1. **Functional Programming**: Immutable data, pure functions, explicit side effects
-2. **Test-Driven Development**: Red-Green-Refactor cycle
-3. **KISS**: Single binary, file-based state, standard library-first
-
-**Test Pyramid:**
-```
-         /\
-        /  \  Contract Tests (API specs)
-       /────\
-      /      \  Integration Tests (with services)
-     /────────\
-    /          \  Unit Tests (pure functions)
-   /────────────\
-```
-
 ### Advanced Development Tasks
 
 **Cross-platform builds:**
@@ -644,7 +626,6 @@ git push origin feature/your-feature-name
 - Address review comments
 
 **Code review checklist:**
-- [ ] Tests written first (TDD)
 - [ ] All tests pass
 - [ ] Code coverage maintained or improved
 - [ ] Follows functional programming principles
@@ -731,7 +712,7 @@ A: Aether uses a hybrid retry strategy: automatic retries for transient errors (
 ### TORCH Integration
 
 **Q: What is CRTDL?**
-A: Cohort Representation for Trial Data Linking - a JSON format for defining patient cohorts and data extraction requirements in TORCH.
+A: Clinical Resource Transfer Definition Language- a JSON format for defining patient cohorts and data extraction requirements in TORCH.
 
 **Q: Can I reuse TORCH extractions?**
 A: Yes! Use the TORCH result URL: `aether pipeline start http://torch-server/fhir/result/abc-123`
@@ -744,19 +725,6 @@ A: Aether fails early with a clear authentication error. Check your `aether.yaml
 
 ### Development
 
-**Q: How do I add a new pipeline step?**
-A: Follow TDD:
-1. Add test in `internal/pipeline/*_test.go`
-2. Implement in `internal/pipeline/*.go`
-3. Update `internal/models/step.go` with new step type
-4. Add step to example config
-
-**Q: Why are tests failing with "connection refused"?**
-A: Integration tests need running services. Run `cd .github/test && make services-up` before testing.
-
-**Q: How do I debug a specific test?**
-A: Use `go test -v ./internal/pipeline/... -run TestSpecificName` for verbose output on a single test.
-
 **Q: Can I contribute without knowing Go?**
 A: You can help with documentation, testing, and bug reports. For code contributions, basic Go knowledge is needed, but we welcome learning developers!
 
@@ -765,9 +733,6 @@ A:
 - **Unit tests**: Test pure functions in isolation (no I/O, no external services)
 - **Integration tests**: Test with real services (TORCH, DIMP) via Docker Compose
 - **Contract tests**: Verify HTTP API specifications match implementation
-
-**Q: How do I run tests without Docker?**
-A: Run only unit tests: `go test ./internal/models/ ./internal/lib/`. Integration tests require Docker.
 
 ### Configuration
 
@@ -799,7 +764,6 @@ A: Not currently configurable, but progress output is automatically disabled in 
 Contributions welcome! Please follow the [Contributing Workflow](#contributing-workflow) in the Development section.
 
 **Quick checklist:**
-- ✅ Tests written first (TDD approach)
 - ✅ All tests pass (`make test`)
 - ✅ Code coverage maintained (`make coverage`)
 - ✅ Follows functional programming principles (immutability, pure functions)
