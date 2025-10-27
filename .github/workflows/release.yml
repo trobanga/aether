@@ -1,0 +1,237 @@
+name: Release
+
+on:
+  push:
+    tags: [ "v*.*.*" ]
+    paths-ignore:
+      - 'docs/**'
+
+permissions:
+  contents: write
+  attestations: write
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.2'
+          cache: true
+
+      - name: Run tests with coverage
+        run: go test -coverpkg=./internal/... -coverprofile=coverage.txt ./tests/...
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: trobanga/aether
+
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Blazectl
+        env:
+          # renovate: datasource=github-release-attachments depName=samply/blazectl
+          BLAZECTL_VERSION: v1.1.0
+          BLAZECTL_CHECKSUM: 42a1795372442fcf3bbc962b6d53560555d2b83eb2a1c31361ba049dc344c059
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: .github/scripts/install-blazectl.sh
+
+      - name: Download test data
+        working-directory: .github/test
+        run: ../scripts/download-testdata.sh
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pre-pull Docker images with retries
+        working-directory: .github/test
+        run: |
+          echo "Extracting image list from docker compose configuration..."
+          docker compose config --images | while read -r image; do
+            echo "Pulling $image..."
+            retry_count=0
+            max_retries=3
+            until docker pull "$image"; do
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -ge $max_retries ]; then
+                echo "Failed to pull $image after $max_retries attempts"
+                exit 1
+              fi
+              echo "Retry $retry_count/$max_retries failed, waiting 10 seconds..."
+              sleep 10
+            done
+            echo "Successfully pulled $image"
+          done
+
+      - name: Start Docker services
+        working-directory: .github/test
+        run: docker compose up --wait --timeout 300
+
+      - name: Fix torch output directory permissions
+        run: |
+          docker compose -f .github/test/compose.yaml exec -T --user=root torch chown -R 1001:1001 /app/output
+
+      - name: Upload test data to torch-hds
+        working-directory: .github/test
+        run: ../scripts/upload-testdata.sh
+
+      - name: Install verification tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y jq ripgrep
+
+      - name: Build aether
+        run: make build
+
+      - name: Run E2E tests with dynamic ports
+        working-directory: .github/test
+        run: ../scripts/run-e2e-test.sh
+
+      - name: Verify E2E test output
+        working-directory: .github/test
+        run: |
+          JOBS_DIR=./jobs ../scripts/verify-e2e-output.sh
+
+      - name: Upload E2E job outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-job-outputs-${{ github.run_id }}
+          path: .github/test/jobs/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Capture service logs on failure
+        if: failure()
+        run: |
+          docker compose -f .github/test/compose.yaml logs > docker-logs-e2e.txt
+
+      - name: Upload service logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-logs-e2e-${{ github.run_id }}
+          path: docker-logs-e2e.txt
+          retention-days: 7
+
+      - name: Cleanup Docker services
+        if: always()
+        run: docker compose -f .github/test/compose.yaml down -v
+
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    needs: [test, e2e-test]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.2'
+          cache: true
+
+      - name: Build release binaries
+        run: make release
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: bin/release/
+          retention-days: 1
+
+  publish:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  attestation:
+    name: Generate Attestations
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - arch: linux-amd64
+            path: bin/release/aether-*-linux-amd64.tar.gz
+          - arch: darwin-amd64
+            path: bin/release/aether-*-darwin-amd64.tar.gz
+          - arch: darwin-arm64
+            path: bin/release/aether-*-darwin-arm64.tar.gz
+          - arch: windows-amd64
+            path: bin/release/aether-*-windows-amd64.zip
+          - arch: windows-arm64
+            path: bin/release/aether-*-windows-arm64.zip
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: bin/release/
+
+      - name: Generate provenance attestation for ${{ matrix.arch }}
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: ${{ matrix.path }}
+
+      - name: Generate SBOM attestation for ${{ matrix.arch }}
+        uses: anchore/sbom-action@v0
+        with:
+          path: bin/release/
+          format: spdx-json
+          output-file: sbom-${{ matrix.arch }}.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.arch }}
+          path: sbom-${{ matrix.arch }}.spdx.json
+          retention-days: 90
