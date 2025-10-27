@@ -130,9 +130,9 @@ Run:
 aether pipeline start /path/to/fhir/files/
 ```
 
-### TORCH Extraction with Pseudonymization
+### TORCH Extraction with DIMP Pseudonymization
 
-Extract from TORCH using a CRTDL query and apply pseudonymization:
+Extract minimized data from TORCH using a CRTDL query, then apply pseudonymization via DIMP:
 
 ```yaml
 # aether.yaml

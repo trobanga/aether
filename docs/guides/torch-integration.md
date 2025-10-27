@@ -6,9 +6,9 @@ TORCH is a FHIR server for clinical research data. Aether can directly extract d
 
 TORCH Integration allows you to:
 - Query cohorts from TORCH FHIR servers using standardized CRTDL queries
-- Automatically extract patient data based on clinical criteria
+- Automatically extract patient data based on clinical criteria with data minimization
 - Import extracted FHIR resources into Aether for processing
-- Apply pseudonymization or other transformations to sensitive data
+- Combine with DIMP for pseudonymization of sensitive data (optional)
 
 ## Prerequisites
 

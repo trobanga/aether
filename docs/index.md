@@ -22,7 +22,7 @@ features:
     details: DIMP pseudonymization, secure data handling, and FHIR compliance
   - icon: 🔗
     title: TORCH Integration
-    details: Seamless integration with TORCH for healthcare data transformation
+    details: Seamless integration with TORCH for FHIR data extraction and minimization
   - icon: 📚
     title: Well Documented
     details: Complete guides, API references, and development documentation
