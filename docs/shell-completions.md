@@ -234,6 +234,6 @@ source <(./bin/aether completion zsh)
 
 ## See Also
 
-- [Cobra Shell Completions](https://github.com/spf13/cobra/blob/main/shell_completions.md)
+- [Cobra Shell Completions](https://cobra.dev/docs/user_guide/#shell-completions)
 - [zsh Completion System](http://zsh.sourceforge.net/Doc/Release/Completion-System.html)
 - [bash Programmable Completion](https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion.html)
