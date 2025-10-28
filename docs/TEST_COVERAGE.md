@@ -1,10 +1,60 @@
 # Test Coverage for Multi-Step Pipeline Execution
 
-This document describes the comprehensive test suite created to verify that the pipeline correctly executes all enabled steps and that configuration is loaded properly.
+This document describes the comprehensive test suite created to verify that the pipeline correctly executes all enabled steps, that configuration is loaded properly, and that validation logic functions correctly.
 
 ## Test Files
 
-### 1. `tests/integration/pipeline_multistep_test.go`
+### 1. `tests/unit/config_validation_test.go` ⭐
+**New in this branch** - Unit tests for configuration and model validation.
+
+#### TestProjectConfig_Validate()
+**Critical validation test** - Verifies that `ProjectConfig.Validate()` correctly validates all configuration fields.
+
+- **Empty enabled steps**: Ensures error when no pipeline steps are configured
+- **First step validation**: Verifies that first enabled step MUST be an import step (torch, local_import, or http_import)
+  - Tests rejection of non-import first steps (validation, dimp, etc.)
+  - Tests acceptance of all three import step types
+- **Unrecognized steps**: Validates error for invalid step names
+- **Retry configuration**: Tests bounds checking for max_attempts (1-10), backoff values (positive), and backoff ordering
+- **Jobs directory**: Ensures jobs_dir is required
+
+**Test Cases**: 13 comprehensive test scenarios covering all validation error paths
+
+#### TestValidateSplitConfig()
+Validates Bundle splitting threshold configuration (1-100 MB range).
+
+### 2. `tests/unit/import_step_test.go`
+**New in this branch** - Unit tests for import step error handling.
+
+#### TestExecuteImportStep_UnsupportedInputType()
+Tests error handling for unknown/unsupported input types.
+
+- Verifies proper error message for unsupported input types
+- Ensures job state is updated correctly on error
+- Tests error classification as non-transient
+
+### 3. `tests/unit/pipeline_job_test.go` (Enhanced)
+**Enhanced in this branch** - Added edge case tests for job lifecycle.
+
+#### TestAdvanceToNextStep_NoMoreSteps()
+Tests job completion when advancing past the last step.
+
+- Verifies job is marked as completed
+- Ensures current step is cleared
+
+#### TestStartJob_EmptySteps()
+Tests StartJob when job has no steps defined.
+
+- Verifies job transitions to in_progress even with empty steps
+- Edge case handling for malformed job configurations
+
+#### TestCompleteJob()
+Tests CompleteJob function behavior.
+
+- Verifies job status transitions to completed
+- Ensures current step is cleared
+
+### 4. `tests/integration/pipeline_multistep_test.go`
 Integration tests for multi-step pipeline execution.
 
 #### TestPipelineMultiStep_AutomaticExecution ⭐
@@ -48,7 +98,7 @@ Verifies job state is correctly saved after each step execution.
 
 ---
 
-### 2. `tests/unit/config_loading_test.go`
+### 5. `tests/unit/config_loading_test.go`
 Unit tests specifically for configuration loading (the root cause of the bug).
 
 #### TestConfigLoading_MultipleEnabledSteps ⭐
@@ -108,11 +158,23 @@ Verifies minimal valid configuration loads successfully.
 ## Running the Tests
 
 ```bash
+# Run validation tests
+go test ./tests/unit/config_validation_test.go -v -run TestProjectConfig_Validate
+
+# Run import error handling tests
+go test ./tests/unit/import_step_test.go -v
+
+# Run enhanced job lifecycle tests
+go test ./tests/unit/pipeline_job_test.go -v
+
 # Run all multi-step integration tests
 go test ./tests/integration/pipeline_multistep_test.go -v
 
 # Run all config loading unit tests
 go test ./tests/unit/config_loading_test.go -v
+
+# Run all unit tests
+go test ./tests/unit/... -v
 
 # Run all tests in the test suite
 go test ./tests/... -v
@@ -120,38 +182,97 @@ go test ./tests/... -v
 
 ## Test Summary
 
-| Test File | Tests | Status |
-|-----------|-------|--------|
-| `pipeline_multistep_test.go` | 5 tests | ✅ All Pass |
-| `config_loading_test.go` | 9 tests | ✅ All Pass |
-| **Total** | **14 tests** | ✅ **All Pass** |
+| Test File | Tests | Status | Notes |
+|-----------|-------|--------|-------|
+| `config_validation_test.go` | 13+ tests | ✅ All Pass | **New in this branch** |
+| `import_step_test.go` | 1 test | ✅ All Pass | **New in this branch** |
+| `pipeline_job_test.go` | 12+ tests | ✅ All Pass | 3 tests added |
+| `pipeline_multistep_test.go` | 5 tests | ✅ All Pass | |
+| `config_loading_test.go` | 9 tests | ✅ All Pass | |
+| **Total** | **40+ tests** | ✅ **All Pass** | |
 
-## Critical Tests (Regression Prevention)
+## Critical Tests (Regression Prevention & Validation)
 
-These tests specifically target the bugs that were fixed:
+These tests specifically target bugs, edge cases, and validation requirements:
 
+### Regression Prevention
 1. **TestPipelineMultiStep_AutomaticExecution** - Ensures pipeline executes all enabled steps, not just import
 2. **TestConfigLoading_MultipleEnabledSteps** - Ensures viper doesn't drop enabled steps during config loading
 3. **TestPipelineMultiStep_ConfigLoadingPreservesSteps** - Integration test combining both fixes
+
+### Validation & Error Handling (New in this branch)
+4. **TestProjectConfig_Validate** - Comprehensive validation of configuration fields, especially:
+   - First step must be an import step (critical business rule)
+   - Retry configuration bounds checking
+   - Required fields validation
+5. **TestExecuteImportStep_UnsupportedInputType** - Error handling for unknown input types
+6. **TestAdvanceToNextStep_NoMoreSteps** - Job completion edge case
+7. **TestStartJob_EmptySteps** - Malformed job configuration handling
 
 ## Test Coverage
 
 The test suite covers:
 
+### Pipeline Execution
 - ✅ Automatic multi-step execution
 - ✅ Step sequencing and order
+- ✅ Job state persistence between steps
+- ✅ Step advancement logic
+- ✅ Job lifecycle (start, complete, fail)
+
+### Configuration & Validation
 - ✅ Config loading (all fields)
 - ✅ Service URLs (empty, partial, full)
-- ✅ Job state persistence between steps
-- ✅ Edge cases (only import, no config file, minimal config)
+- ✅ **Config validation (first step, retry bounds, required fields)** ⭐ New
 - ✅ YAML parsing correctness
-- ✅ Step advancement logic
+
+### Error Handling
+- ✅ **Unknown input type handling** ⭐ New
+- ✅ Network errors and retries
+- ✅ File system errors
+- ✅ Validation errors
+
+### Edge Cases
+- ✅ Only import step enabled
+- ✅ **Empty steps array** ⭐ New
+- ✅ **Last step completion** ⭐ New
+- ✅ No config file
+- ✅ Minimal config
+- ✅ Unrecognized step names
 
 ## Continuous Integration
 
-These tests should be run in CI/CD pipelines to prevent regression of the fixed bugs.
+These tests should be run in CI/CD pipelines to prevent regression and ensure validation correctness.
 
-Recommended CI command:
+Recommended CI commands:
 ```bash
-go test ./tests/unit/config_loading_test.go ./tests/integration/pipeline_multistep_test.go
+# Run all unit tests (includes new validation tests)
+go test ./tests/unit/... -v
+
+# Run critical regression tests
+go test ./tests/unit/config_loading_test.go ./tests/integration/pipeline_multistep_test.go -v
+
+# Run validation tests specifically
+go test ./tests/unit/config_validation_test.go ./tests/unit/import_step_test.go -v
 ```
+
+## Coverage Improvements (This Branch)
+
+### Files with Improved Coverage
+1. **internal/models/validation.go** - Added 13 test cases for `ProjectConfig.Validate()`
+   - Increased coverage of validation error paths
+   - **Specifically tests the "first step must be an import" requirement**
+
+2. **internal/pipeline/import.go** - Added test for unsupported input type error handling
+   - Covers the default case in import step switch statement
+
+3. **internal/pipeline/job.go** - Added 3 edge case tests
+   - Job completion when no more steps
+   - Starting job with empty steps array
+   - Job completion verification
+
+### Test Statistics
+- **Before**: ~26 tests
+- **After**: 40+ tests
+- **New tests**: 17+
+- **Files affected**: 3 implementation files with improved coverage

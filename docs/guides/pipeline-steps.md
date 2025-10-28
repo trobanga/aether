@@ -9,9 +9,10 @@ The Aether pipeline is a modular, configurable series of processing steps that w
 ```
 Start
   ↓
-[TORCH] - Extract from TORCH (optional)
-  ↓
-[Import] - Load and parse FHIR data
+[Import Step] - One of:
+  • torch: Extract from TORCH via CRTDL
+  • local_import: Load from local directory
+  • http_import: Load from HTTP URL
   ↓
 [DIMP] - Pseudonymize/de-identify (optional)
   ↓
@@ -37,16 +38,24 @@ Steps are configured in `aether.yaml`:
 ```yaml
 pipeline:
   enabled_steps:
-    - torch
-    - import
+    - torch          # or local_import or http_import
     - dimp
 ```
+
+**Important**: The first step must always be one of the import step types:
+- `torch` - Import from TORCH server via CRTDL
+- `local_import` - Import from local directory
+- `http_import` - Import from HTTP URL
 
 Only enabled steps execute; others are skipped.
 
 ## Available Pipeline Steps
 
-### 1. TORCH Step
+### Import Steps (Step 1 - Required)
+
+**One of the following import steps must be the first step in your pipeline:**
+
+#### 1a. TORCH Import (`torch`)
 
 **Purpose**: Extract FHIR data from TORCH server using CRTDL queries.
 
@@ -65,10 +74,11 @@ services:
 pipeline:
   enabled_steps:
     - torch
+    - dimp  # optional next steps
 ```
 
 **Input**: CRTDL query file (JSON)
-**Output**: Raw FHIR NDJSON data
+**Output**: FHIR NDJSON data in jobs directory
 
 **Example**:
 ```bash
@@ -77,45 +87,69 @@ aether pipeline start my_cohort.crtdl
 
 See [TORCH Integration](./torch-integration.md) for details.
 
-### 2. Import Step
+#### 1b. Local Import (`local_import`)
 
-**Purpose**: Parse, validate, and normalize FHIR data in NDJSON format.
+**Purpose**: Load and validate FHIR data from local directory.
 
 **Requires**:
-- FHIR NDJSON files or TORCH extraction
+- Local directory containing FHIR NDJSON files
 
 **Configuration**:
 ```yaml
 pipeline:
   enabled_steps:
-    - import
+    - local_import
+    - dimp  # optional next steps
 ```
 
-**Input**: FHIR NDJSON files
-**Output**: Validated, normalized FHIR bundles
+**Input**: Path to directory with FHIR NDJSON files
+**Output**: Validated FHIR data in jobs directory
 
 **Features**:
 - Validates FHIR schema compliance
-- Normalizes resource identifiers
-- Handles duplicates
+- Handles multiple NDJSON files
 - Reports validation errors
 
 **Example**:
 ```bash
-# Import from local files
 aether pipeline start /path/to/fhir/files/
-
-# Import from TORCH
-aether pipeline start query.crtdl
 ```
 
-### 3. DIMP Step
+#### 1c. HTTP Import (`http_import`)
+
+**Purpose**: Download and validate FHIR data from HTTP/HTTPS URL.
+
+**Requires**:
+- HTTP/HTTPS URL to FHIR NDJSON file or endpoint
+
+**Configuration**:
+```yaml
+pipeline:
+  enabled_steps:
+    - http_import
+    - dimp  # optional next steps
+```
+
+**Input**: HTTP/HTTPS URL to FHIR data
+**Output**: Downloaded and validated FHIR data in jobs directory
+
+**Features**:
+- Downloads FHIR data from remote URLs
+- Validates FHIR schema compliance
+- Supports authentication (if configured)
+
+**Example**:
+```bash
+aether pipeline start https://fhir.server.org/export/Patient.ndjson
+```
+
+### 2. DIMP Step
 
 **Purpose**: De-identify and pseudonymize FHIR data via DIMP service.
 
 **Requires**:
 - DIMP service running
-- Import step to complete first
+- One of the import steps (torch, local_import, or http_import) to complete first
 
 **Configuration**:
 ```yaml
@@ -126,7 +160,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import  # or torch or http_import
     - dimp
 ```
 
@@ -146,7 +180,7 @@ aether pipeline start /path/to/fhir/
 
 See [DIMP Pseudonymization](./dimp-pseudonymization.md) for details.
 
-### 4. Validation Step (Placeholder)
+### 3. Validation Step (Placeholder)
 
 **Purpose**: Validate data quality and FHIR compliance.
 
@@ -156,7 +190,7 @@ See [DIMP Pseudonymization](./dimp-pseudonymization.md) for details.
 ```yaml
 pipeline:
   enabled_steps:
-    - import
+    - local_import  # or torch or http_import
     - validation
 ```
 
@@ -166,7 +200,7 @@ pipeline:
 - Missing field detection
 - Cross-reference validation
 
-### 5. CSV Conversion (Placeholder)
+### 4. CSV Conversion (Placeholder)
 
 **Purpose**: Convert FHIR data to CSV format for analysis.
 
@@ -181,11 +215,11 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import  # or torch or http_import
     - csv_conversion
 ```
 
-### 6. Parquet Conversion (Placeholder)
+### 5. Parquet Conversion (Placeholder)
 
 **Purpose**: Convert FHIR data to Parquet columnar format for big data analysis.
 
@@ -200,7 +234,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import  # or torch or http_import
     - parquet_conversion
 ```
 
@@ -210,29 +244,27 @@ The order of steps matters:
 
 ```
 Must be in order:
-1. TORCH (if using) → 2. Import → 3. Transformation (DIMP) → 4-6. Output formats
+1. Import Step (torch OR local_import OR http_import) → 2. Transformation (DIMP) → 3-5. Output formats
 ```
 
 **Valid pipelines**:
 ```yaml
 # Option A: Local files only
-- import
+- local_import
 - dimp
 
 # Option B: TORCH + DIMP
 - torch
-- import
 - dimp
 
-# Option C: Local files with format conversion (when available)
-- import
+# Option C: HTTP import with format conversion (when available)
+- http_import
 - dimp
 - csv_conversion
 - parquet_conversion
 
 # Option D: TORCH to multiple formats
 - torch
-- import
 - dimp
 - csv_conversion
 - parquet_conversion
@@ -240,16 +272,19 @@ Must be in order:
 
 **Invalid pipelines**:
 ```yaml
-# ❌ DIMP before Import
+# ❌ DIMP without import step
 - dimp
-- import
 
-# ❌ Conversion without Import
+# ❌ Multiple import steps
+- torch
+- local_import
+
+# ❌ Conversion without import step
 - csv_conversion
 
-# ❌ TORCH + Import skipped
-- torch
-- dimp
+# ❌ No import step first
+- validation
+- local_import
 ```
 
 ## Error Handling & Retries

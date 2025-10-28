@@ -6,7 +6,7 @@ This guide walks you through installing Aether on your system.
 
 Before installing Aether, ensure you have:
 
-- **Go 1.21 or later** (required)
+- **Go 1.25 or later** (required)
 - **make** (for building from source)
 - **git** (for cloning the repository)
 
