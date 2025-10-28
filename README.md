@@ -59,7 +59,7 @@ Aether is a CLI tool designed for medical researchers and data engineers to proc
 ### For End Users
 
 **Prerequisites:**
-- Go 1.21 or later (for building from source)
+- Go 1.25 or later (for building from source)
 - Optional: TORCH server access (for FHIR data extraction)
 - Optional: DIMP service (for pseudonymization)
 
@@ -163,7 +163,7 @@ aether pipeline start query.crtdl
 ### For Developers
 
 **Prerequisites:**
-- Go 1.21+ ([download](https://go.dev/dl/))
+- Go 1.25+ ([download](https://go.dev/dl/))
 - Make
 - Docker & Docker Compose (for integration tests)
 - Git
@@ -465,7 +465,7 @@ aether/
 │   │   └── validation.go     # Model validation
 │   ├── pipeline/             # Pipeline orchestration
 │   │   ├── job.go            # Job initialization
-│   │   ├── import.go         # Import step
+│   │   ├── import.go         # Import step dispatcher (torch/local/http)
 │   │   └── dimp.go           # DIMP step
 │   ├── services/             # Side effects (I/O, HTTP)
 │   │   ├── importer.go       # Local file import

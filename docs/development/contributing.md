@@ -6,7 +6,7 @@ Contributions welcome! Please follow this workflow to contribute to Aether.
 
 ### Prerequisites
 
-- Go 1.21+ ([download](https://go.dev/dl/))
+- Go 1.25+ ([download](https://go.dev/dl/))
 - Make
 - Git
 - Docker & Docker Compose (for integration tests)
@@ -116,7 +116,7 @@ git commit -m "feat: add validation step to pipeline"
 git commit -m "fix: correct retry backoff calculation"
 git commit -m "docs: update TORCH integration guide"
 git commit -m "refactor: simplify state persistence logic"
-git commit -m "test: add table-driven tests for import step"
+git commit -m "test: add table-driven tests for TORCH import step"
 
 # Avoid vague messages
 # ❌ git commit -m "fix stuff"
@@ -253,6 +253,8 @@ make services-down
 ## Common Tasks
 
 ### Adding a New Pipeline Step
+
+**Note**: The import step types (torch, local_import, http_import) are already implemented. This section is for adding new processing steps after import.
 
 1. **Create model** in `internal/models/step.go`
 2. **Write tests** in `tests/unit/{step_name}_test.go`

@@ -52,11 +52,11 @@ The `bundle_split_threshold_mb` setting controls automatic splitting of large FH
 ```yaml
 pipeline:
   enabled_steps:
-    - import  # Import FHIR data
-    - dimp    # Apply pseudonymization
+    - local_import  # Import FHIR data (or torch or http_import)
+    - dimp          # Apply pseudonymization
 ```
 
-The order matters: DIMP should run after data import.
+**Important**: One of the import step types (torch, local_import, or http_import) must always be first. DIMP runs after the import step.
 
 ### 3. Full Configuration Example
 
@@ -68,7 +68,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import  # or torch or http_import
     - dimp
 
 retry:
@@ -86,7 +86,7 @@ jobs_dir: "./jobs"
 ```
 Raw FHIR Data
     ↓
-Import Step (parse, validate)
+Import Step (torch/local_import/http_import)
     ↓
 DIMP Pseudonymization
   - Extract identifiable elements

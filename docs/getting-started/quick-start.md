@@ -6,7 +6,7 @@ Get up and running with Aether in just a few minutes.
 
 Before starting, ensure you have:
 - **Aether installed** - See [Installation Guide](./installation.md)
-- **Go 1.21+** (if building from source)
+- **Go 1.25+** (if building from source)
 - **Optional**: TORCH server access or DIMP service (for advanced features)
 
 ## 5-Minute Setup
@@ -29,7 +29,7 @@ For basic local testing (no external services):
 # aether.yaml
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 jobs_dir: "./jobs"
 ```
@@ -40,7 +40,7 @@ For local FHIR data with pseudonymization:
 # aether.yaml
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 
 services:
@@ -112,7 +112,7 @@ You have FHIR NDJSON files and want to pseudonymize them:
 # Update aether.yaml:
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 
 services:
@@ -140,7 +140,6 @@ services:
 pipeline:
   enabled_steps:
     - torch
-    - import
     - dimp
 ```
 

@@ -65,8 +65,7 @@ aether/
 │   │   └── validation.go     # Model validation
 │   ├── pipeline/             # Pipeline orchestration (pure)
 │   │   ├── job.go            # Job initialization
-│   │   ├── import.go         # Import step
-│   │   ├── torch.go          # TORCH extraction step
+│   │   ├── import.go         # Import step dispatcher (torch/local/http)
 │   │   └── dimp.go           # DIMP pseudonymization step
 │   ├── services/             # Side effects (I/O, HTTP)
 │   │   ├── importer.go       # Local file import
@@ -146,10 +145,11 @@ Benefits:
 3. Initialize Job (UUID, state directory)
    ↓
 4. Execute Pipeline Steps (in order)
-   ├─→ TORCH Step (if enabled): Extract FHIR from TORCH
+   ├─→ Import Step (required, one of):
+   │   ├─→ torch: Extract FHIR from TORCH via CRTDL
+   │   ├─→ local_import: Load FHIR from local directory
+   │   └─→ http_import: Download FHIR from HTTP URL
    │   └─→ Save results to job directory
-   ├─→ Import Step: Parse & validate FHIR NDJSON
-   │   └─→ Save normalized bundles
    ├─→ DIMP Step (if enabled): Pseudonymization
    │   └─→ Save de-identified data
    └─→ [Future steps...]
@@ -186,14 +186,14 @@ This enables:
 ### TORCH Integration
 
 ```
-User Command
+User Command (with .crtdl file)
     ↓
-Aether → TORCH Server
+Aether (torch import step) → TORCH Server
     ├─→ Submit CRTDL query
     ├─→ Poll extraction status (5s intervals)
     └─→ Download FHIR NDJSON results
     ↓
-Import Step (processes downloaded data)
+Save to job directory
 ```
 
 ### DIMP Integration

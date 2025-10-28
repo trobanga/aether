@@ -36,7 +36,7 @@ services:
 pipeline:
   # NOTE: One of the import step types (torch, local_import, http_import) must always be first
   enabled_steps:
-    - import
+    - local_import  # or torch or http_import
     - dimp
     # - validation    (not yet implemented)
     # - csv_conversion (service not available)

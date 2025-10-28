@@ -227,6 +227,12 @@ sleep 2
 # Run all unit tests
 go test ./tests/unit/... -v
 
+# Run validation tests specifically
+go test ./tests/unit/config_validation_test.go -v -run TestProjectConfig_Validate
+
+# Run import error handling tests
+go test ./tests/unit/import_step_test.go -v
+
 # Run all integration tests
 go test ./tests/integration/... -v
 
@@ -238,6 +244,65 @@ go test ./tests/integration/pipeline_resume_test.go -v
 ```
 
 **All tests should PASS** ✅
+
+---
+
+## Testing Configuration Validation
+
+### Scenario: Test Configuration Validation
+
+This tests the validation logic for project configuration, especially the critical business rule that **the first enabled step must be an import step**.
+
+```bash
+# Run the comprehensive validation test suite
+go test ./tests/unit/config_validation_test.go -v -run TestProjectConfig_Validate
+```
+
+**What is tested:**
+- ✅ First step must be torch_import, local_import, or http_import
+- ✅ Rejection of non-import first steps (validation, dimp, etc.)
+- ✅ Empty enabled steps array error handling
+- ✅ Unrecognized step names
+- ✅ Retry configuration bounds (max_attempts: 1-10)
+- ✅ Backoff validation (positive values, proper ordering)
+- ✅ Required fields (jobs_dir)
+
+**Example Test Cases:**
+1. **Valid config** - First step is local_import ✓
+2. **Invalid config** - First step is validation ✗ (Error: "first enabled step must be an import step")
+3. **Invalid config** - Empty steps array ✗ (Error: "at least one pipeline step must be enabled")
+
+---
+
+## Testing Error Handling
+
+### Scenario: Test Unknown Input Type
+
+```bash
+# Test handling of unsupported input types
+go test ./tests/unit/import_step_test.go -v
+```
+
+**What is tested:**
+- ✅ Error message for unsupported input types
+- ✅ Job state updates correctly on error
+- ✅ Error classification (transient vs non-transient)
+
+---
+
+## Testing Job Lifecycle Edge Cases
+
+### Scenario: Test Job State Transitions
+
+```bash
+# Test edge cases in job lifecycle
+go test ./tests/unit/pipeline_job_test.go -v -run "TestAdvanceToNextStep_NoMoreSteps|TestStartJob_EmptySteps|TestCompleteJob"
+```
+
+**What is tested:**
+- ✅ Job completion when no more steps remain
+- ✅ Starting a job with empty steps array
+- ✅ Job status transitions during completion
 
 ---
 
