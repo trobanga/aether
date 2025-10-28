@@ -27,7 +27,7 @@ permissions:
 jobs:
   test:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout code
@@ -50,7 +50,7 @@ jobs:
 
   e2e-test:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [test]
     timeout-minutes: 30
     steps:

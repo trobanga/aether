@@ -13,7 +13,7 @@ permissions:
 jobs:
   test:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout code
@@ -36,7 +36,7 @@ jobs:
 
   e2e-test:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [test]
     timeout-minutes: 30
     steps:
@@ -139,7 +139,7 @@ jobs:
 
   build:
     name: Build Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [test, e2e-test]
     timeout-minutes: 30
     steps:
@@ -166,7 +166,7 @@ jobs:
 
   publish:
     name: Publish Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [build]
     timeout-minutes: 30
     steps:
@@ -191,7 +191,7 @@ jobs:
 
   attestation:
     name: Generate Attestations
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [build]
     timeout-minutes: 30
     strategy:
