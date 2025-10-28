@@ -42,7 +42,7 @@ func TestPipelineImportLocal_EndToEnd(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepLocalImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -85,7 +85,7 @@ func TestPipelineImportLocal_EndToEnd(t *testing.T) {
 	require.NotNil(t, importedJob, "Imported job should be returned")
 
 	// Verify import step completed
-	importStep, found := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*importedJob, models.StepLocalImport)
 	require.True(t, found, "Import step should exist")
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status, "Import step should be completed")
 	assert.Equal(t, 3, importStep.FilesProcessed, "Should process 3 files")
@@ -100,7 +100,7 @@ func TestPipelineImportLocal_EndToEnd(t *testing.T) {
 	require.NoError(t, pipeline.UpdateJob(jobsDir, importedJob))
 
 	// Step 4: Verify files were imported
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepLocalImport)
 	assert.DirExists(t, importDir, "Import directory should exist")
 
 	// Check that all files were copied
@@ -118,7 +118,7 @@ func TestPipelineImportLocal_EndToEnd(t *testing.T) {
 	assert.Equal(t, importedJob.TotalBytes, reloadedJob.TotalBytes, "Byte count should be persisted")
 
 	// Verify import step state
-	reloadedImportStep, found := models.GetStepByName(*reloadedJob, models.StepImport)
+	reloadedImportStep, found := models.GetStepByName(*reloadedJob, models.StepLocalImport)
 	require.True(t, found, "Import step should exist after reload")
 	assert.Equal(t, models.StepStatusCompleted, reloadedImportStep.Status, "Import step status should be persisted")
 	assert.Equal(t, 3, reloadedImportStep.FilesProcessed, "Files processed should be persisted")
@@ -133,7 +133,7 @@ func TestPipelineImportLocal_InvalidSource(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepLocalImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -158,7 +158,7 @@ func TestPipelineImportLocal_InvalidSource(t *testing.T) {
 	assert.NotNil(t, importedJob, "Job should be returned even on failure")
 
 	// Verify import step failed
-	importStep, found := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*importedJob, models.StepLocalImport)
 	require.True(t, found, "Import step should exist")
 	assert.Equal(t, models.StepStatusFailed, importStep.Status, "Import step should be failed")
 	assert.NotNil(t, importStep.LastError, "Should have error details")
@@ -181,7 +181,7 @@ func TestPipelineImportLocal_EmptyDirectory(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepLocalImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -203,7 +203,7 @@ func TestPipelineImportLocal_EmptyDirectory(t *testing.T) {
 	assert.Error(t, err, "Import should fail for directory with no FHIR files")
 
 	// Verify error details
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepLocalImport)
 	assert.Equal(t, models.StepStatusFailed, importStep.Status)
 	assert.Contains(t, importStep.LastError.Message, "no FHIR NDJSON files", "Error should mention no FHIR files")
 }
@@ -228,7 +228,7 @@ func TestPipelineImportLocal_ResourceCounting(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepLocalImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -248,11 +248,11 @@ func TestPipelineImportLocal_ResourceCounting(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify resource count
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepLocalImport)
 	assert.Equal(t, 1, importStep.FilesProcessed, "Should process 1 file")
 
 	// Check imported file metadata includes correct line count
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepLocalImport)
 	importedPath := filepath.Join(importDir, "Patient.ndjson")
 	assert.FileExists(t, importedPath)
 
@@ -274,7 +274,7 @@ func TestPipelineImportLocal_JobListAndStatus(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepLocalImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -307,7 +307,7 @@ func TestPipelineImportLocal_JobListAndStatus(t *testing.T) {
 	require.NoError(t, err, "Should load job1")
 	assert.Equal(t, models.JobStatusInProgress, loadedJob1.Status)
 
-	importStep, _ := models.GetStepByName(*loadedJob1, models.StepImport)
+	importStep, _ := models.GetStepByName(*loadedJob1, models.StepLocalImport)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)
 
 	loadedJob2, err := pipeline.LoadJob(jobsDir, job2.JobID)

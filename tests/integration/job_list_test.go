@@ -23,7 +23,7 @@ func TestJobList_MultipleJobs(t *testing.T) {
 	jobsDir := filepath.Join(tempDir, "jobs")
 
 	// Create 5 jobs with different states
-	job1 := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepImport)
+	job1 := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepLocalImport)
 	time.Sleep(10 * time.Millisecond) // Ensure different timestamps
 
 	job2 := createTestJobWithState(t, jobsDir, models.JobStatusInProgress, models.StepDIMP)
@@ -32,10 +32,10 @@ func TestJobList_MultipleJobs(t *testing.T) {
 	job3 := createTestJobWithState(t, jobsDir, models.JobStatusFailed, models.StepCSVConversion)
 	time.Sleep(10 * time.Millisecond)
 
-	job4 := createTestJobWithState(t, jobsDir, models.JobStatusPending, models.StepImport)
+	job4 := createTestJobWithState(t, jobsDir, models.JobStatusPending, models.StepLocalImport)
 	time.Sleep(10 * time.Millisecond)
 
-	job5 := createTestJobWithState(t, jobsDir, models.JobStatusInProgress, models.StepImport)
+	job5 := createTestJobWithState(t, jobsDir, models.JobStatusInProgress, models.StepLocalImport)
 
 	// List all jobs
 	jobIDs, err := services.ListAllJobs(jobsDir)
@@ -69,7 +69,7 @@ func TestJobList_WithInvalidJobs(t *testing.T) {
 	require.NoError(t, os.MkdirAll(jobsDir, 0755))
 
 	// Create valid job
-	validJob := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepImport)
+	validJob := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepLocalImport)
 
 	// Create directory without state.json (invalid job)
 	invalidJobDir := filepath.Join(jobsDir, uuid.New().String())
@@ -128,7 +128,7 @@ func TestJobList_SortedByCreationTime(t *testing.T) {
 	}
 
 	for i := 0; i < 3; i++ {
-		job := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepImport)
+		job := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepLocalImport)
 		jobsWithTimes = append(jobsWithTimes, struct {
 			job       *models.PipelineJob
 			createdAt time.Time
@@ -169,10 +169,10 @@ func TestJobList_FilterByStatus(t *testing.T) {
 	jobsDir := filepath.Join(tempDir, "jobs")
 
 	// Create jobs with different statuses
-	completedJob := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepImport)
+	completedJob := createTestJobWithState(t, jobsDir, models.JobStatusCompleted, models.StepLocalImport)
 	inProgressJob := createTestJobWithState(t, jobsDir, models.JobStatusInProgress, models.StepDIMP)
 	failedJob := createTestJobWithState(t, jobsDir, models.JobStatusFailed, models.StepCSVConversion)
-	_ = createTestJobWithState(t, jobsDir, models.JobStatusPending, models.StepImport)
+	_ = createTestJobWithState(t, jobsDir, models.JobStatusPending, models.StepLocalImport)
 
 	// List all jobs
 	allJobIDs, err := services.ListAllJobs(jobsDir)
@@ -210,7 +210,7 @@ func TestJobList_FilterByStatus(t *testing.T) {
 func createTestJobWithState(t *testing.T, jobsDir string, status models.JobStatus, currentStep models.StepName) *models.PipelineJob {
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport, models.StepDIMP, models.StepCSVConversion},
+			EnabledSteps: []models.StepName{models.StepLocalImport, models.StepDIMP, models.StepCSVConversion},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -240,7 +240,7 @@ func createTestJobWithState(t *testing.T, jobsDir string, status models.JobStatu
 
 // Helper: Create job with specific details
 func createJobWithDetails(t *testing.T, jobsDir string, status models.JobStatus, totalFiles int, totalBytes int64) *models.PipelineJob {
-	job := createTestJobWithState(t, jobsDir, status, models.StepImport)
+	job := createTestJobWithState(t, jobsDir, status, models.StepLocalImport)
 	job.TotalFiles = totalFiles
 	job.TotalBytes = totalBytes
 

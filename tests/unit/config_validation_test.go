@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/trobanga/aether/internal/lib"
+	"github.com/trobanga/aether/internal/models"
 )
 
 // TestValidateSplitConfig verifies configuration validation for Bundle splitting threshold
@@ -109,4 +110,239 @@ func TestValidateSplitConfig_ThresholdConversion(t *testing.T) {
 	thresholdMB := 10
 	assert.Greater(t, thresholdMB, 0, "MB value should be positive")
 	assert.LessOrEqual(t, thresholdMB, 100, "MB value should be <= 100")
+}
+
+// TestProjectConfig_Validate tests validation of ProjectConfig struct
+func TestProjectConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  models.ProjectConfig
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "Valid config with single import step",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepLocalImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Empty enabled steps",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "at least one pipeline step must be enabled",
+		},
+		{
+			name: "First step is not an import step - validation step first",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepValidation},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "first enabled step must be an import step (torch, local_import, or http_import)",
+		},
+		{
+			name: "First step is not an import step - DIMP first",
+			config: models.ProjectConfig{
+				Services: models.ServiceConfig{
+					DIMP: models.DIMPConfig{URL: "http://dimp.example.com"},
+				},
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepDIMP},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "first enabled step must be an import step (torch, local_import, or http_import)",
+		},
+		{
+			name: "First step is torch_import - valid",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepTorchImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: false,
+		},
+		{
+			name: "First step is http_import - valid",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepHttpImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Unrecognized step in enabled_steps",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{
+						models.StepLocalImport,
+						models.StepName("invalid_step"),
+					},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "unrecognized step in enabled_steps: invalid_step",
+		},
+		{
+			name: "Max attempts too low",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepLocalImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      0,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "max_attempts must be between 1 and 10",
+		},
+		{
+			name: "Max attempts too high",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepLocalImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      11,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "max_attempts must be between 1 and 10",
+		},
+		{
+			name: "Initial backoff negative",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepLocalImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: -1,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "initial_backoff_ms must be positive",
+		},
+		{
+			name: "Max backoff negative",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepLocalImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     -1,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "max_backoff_ms must be positive",
+		},
+		{
+			name: "Initial backoff >= max backoff",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepLocalImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 5000,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "/tmp/jobs",
+			},
+			wantErr: true,
+			errMsg:  "initial_backoff_ms must be less than max_backoff_ms",
+		},
+		{
+			name: "Empty jobs_dir",
+			config: models.ProjectConfig{
+				Pipeline: models.PipelineConfig{
+					EnabledSteps: []models.StepName{models.StepLocalImport},
+				},
+				Retry: models.RetryConfig{
+					MaxAttempts:      3,
+					InitialBackoffMs: 500,
+					MaxBackoffMs:     5000,
+				},
+				JobsDir: "",
+			},
+			wantErr: true,
+			errMsg:  "jobs_dir is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

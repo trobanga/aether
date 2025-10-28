@@ -26,7 +26,7 @@ func TestRetryTracking_IncrementRetryCount(t *testing.T) {
 
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport, models.StepDIMP},
+			EnabledSteps: []models.StepName{models.StepLocalImport, models.StepDIMP},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -94,7 +94,7 @@ func TestRetryTracking_MultipleRetries(t *testing.T) {
 
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepLocalImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -111,7 +111,7 @@ func TestRetryTracking_MultipleRetries(t *testing.T) {
 	startedJob := pipeline.StartJob(job)
 
 	// Get import step
-	importStep, found := models.GetStepByName(*startedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*startedJob, models.StepLocalImport)
 	require.True(t, found)
 
 	// Simulate 3 retries
@@ -136,7 +136,7 @@ func TestRetryTracking_MultipleRetries(t *testing.T) {
 	reloadedJob, err := pipeline.LoadJob(jobsDir, job.JobID)
 	require.NoError(t, err)
 
-	reloadedImportStep, _ := models.GetStepByName(*reloadedJob, models.StepImport)
+	reloadedImportStep, _ := models.GetStepByName(*reloadedJob, models.StepLocalImport)
 	assert.Equal(t, 3, reloadedImportStep.RetryCount, "Should have 3 retries")
 	assert.NotNil(t, reloadedImportStep.LastError, "Should have last error")
 	assert.Equal(t, models.ErrorTypeTransient, reloadedImportStep.LastError.Type)
@@ -209,7 +209,7 @@ func TestRetryTracking_ErrorTypePersistence(t *testing.T) {
 
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport, models.StepDIMP},
+			EnabledSteps: []models.StepName{models.StepLocalImport, models.StepDIMP},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -330,7 +330,7 @@ func TestRetryTracking_ResetOnSuccess(t *testing.T) {
 
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepLocalImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -352,7 +352,7 @@ func TestRetryTracking_ResetOnSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify: Successful step has no retries
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepLocalImport)
 	assert.Equal(t, 0, importStep.RetryCount, "Successful step should have 0 retries")
 	assert.Nil(t, importStep.LastError, "Successful step should have no error")
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)

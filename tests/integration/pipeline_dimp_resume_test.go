@@ -42,7 +42,7 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 			},
 		},
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport, models.StepDIMP},
+			EnabledSteps: []models.StepName{models.StepLocalImport, models.StepDIMP},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -72,7 +72,7 @@ func TestDIMPResumeAfterInterrupt(t *testing.T) {
 
 	// Mark import step as completed
 	job = pipeline.StartJob(job)
-	importStep, _ := models.GetStepByName(*job, models.StepImport)
+	importStep, _ := models.GetStepByName(*job, models.StepLocalImport)
 	importStep = models.CompleteStep(importStep, len(testFiles), 300)
 	*job = models.ReplaceStep(*job, importStep)
 	require.NoError(t, pipeline.UpdateJob(jobsDir, job))

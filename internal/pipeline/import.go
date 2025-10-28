@@ -15,16 +15,17 @@ import (
 func ExecuteImportStep(job *models.PipelineJob, logger *lib.Logger, httpClient *services.HTTPClient, showProgress bool) (*models.PipelineJob, error) {
 	startTime := time.Now()
 
-	lib.LogStepStart(logger, string(models.StepImport), job.JobID)
+	currentStep := models.StepName(job.CurrentStep)
+	lib.LogStepStart(logger, string(currentStep), job.JobID)
 
 	// Get import output directory
-	importDir := services.GetJobOutputDir(job.Config.JobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(job.Config.JobsDir, job.JobID, currentStep)
 
 	// Validate input source
 	if err := services.ValidateImportSource(job.InputSource, job.InputType); err != nil {
 		// Failed with non-transient error
 		updatedJob := failImportStep(job, err, models.ErrorTypeNonTransient, 0)
-		lib.LogStepFailed(logger, string(models.StepImport), job.JobID, err, false)
+		lib.LogStepFailed(logger, string(currentStep), job.JobID, err, false)
 		return &updatedJob, err
 	}
 
@@ -62,7 +63,7 @@ func ExecuteImportStep(job *models.PipelineJob, logger *lib.Logger, httpClient *
 		// Classify error type
 		errorType := classifyImportError(err, job.InputType)
 		updatedJob := failImportStep(job, err, errorType, 0)
-		lib.LogStepFailed(logger, string(models.StepImport), job.JobID, err, errorType == models.ErrorTypeTransient)
+		lib.LogStepFailed(logger, string(currentStep), job.JobID, err, errorType == models.ErrorTypeTransient)
 		return &updatedJob, err
 	}
 
@@ -76,19 +77,20 @@ func ExecuteImportStep(job *models.PipelineJob, logger *lib.Logger, httpClient *
 	updatedJob := models.UpdateJobMetrics(*job, len(importedFiles), totalBytes)
 
 	// Complete the import step
-	importStep, _ := models.GetStepByName(updatedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(updatedJob, currentStep)
 	completedStep := models.CompleteStep(importStep, len(importedFiles), totalBytes)
 	updatedJob = models.ReplaceStep(updatedJob, completedStep)
 
 	duration := time.Since(startTime)
-	lib.LogStepComplete(logger, string(models.StepImport), job.JobID, len(importedFiles), duration)
+	lib.LogStepComplete(logger, string(currentStep), job.JobID, len(importedFiles), duration)
 
 	return &updatedJob, nil
 }
 
 // failImportStep marks the import step as failed
 func failImportStep(job *models.PipelineJob, err error, errorType models.ErrorType, httpStatus int) models.PipelineJob {
-	importStep, found := models.GetStepByName(*job, models.StepImport)
+	currentStep := models.StepName(job.CurrentStep)
+	importStep, found := models.GetStepByName(*job, currentStep)
 	if !found {
 		// Step not found - shouldn't happen, but handle gracefully
 		return models.AddError(*job, err.Error())
@@ -190,7 +192,8 @@ func classifyImportError(err error, inputType models.InputType) models.ErrorType
 // Should only be called if the error was transient
 func RetryImportStep(job *models.PipelineJob, logger *lib.Logger, httpClient *services.HTTPClient, showProgress bool) (*models.PipelineJob, error) {
 	// Get current import step
-	importStep, found := models.GetStepByName(*job, models.StepImport)
+	currentStep := models.StepName(job.CurrentStep)
+	importStep, found := models.GetStepByName(*job, currentStep)
 	if !found {
 		return nil, fmt.Errorf("import step not found")
 	}

@@ -3,6 +3,7 @@ package unit
 import (
 	"crypto/md5"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -100,11 +101,14 @@ func generatePadding(sizeBytes int) string {
 	// Create padding string (repeating pattern to reach target size)
 	const pattern = "0123456789abcdef"
 	repetitions := (sizeBytes / len(pattern)) + 1
-	padding := ""
+
+	// Use strings.Builder for efficient string concatenation (O(n) instead of O(n²))
+	var builder strings.Builder
+	builder.Grow(sizeBytes) // Pre-allocate capacity to avoid multiple allocations
 	for i := 0; i < repetitions; i++ {
-		padding += pattern
+		builder.WriteString(pattern)
 	}
-	return padding[:sizeBytes]
+	return builder.String()[:sizeBytes]
 }
 
 // hashValue creates a deterministic hash of a value for pseudonymization

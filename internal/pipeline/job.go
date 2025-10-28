@@ -32,6 +32,19 @@ func CreateJob(inputSource string, config models.ProjectConfig, logger *lib.Logg
 		logger.Info("CRTDL syntax validation passed")
 	}
 
+	// Determine initial step based on input type
+	var initialStep models.StepName
+	switch inputType {
+	case models.InputTypeCRTDL, models.InputTypeTORCHURL:
+		initialStep = models.StepTorchImport
+	case models.InputTypeLocal:
+		initialStep = models.StepLocalImport
+	case models.InputTypeHTTP:
+		initialStep = models.StepHttpImport
+	default:
+		return nil, fmt.Errorf("unknown input type: %s", inputType)
+	}
+
 	// Initialize steps from config
 	steps := models.InitializeSteps(config.Pipeline.EnabledSteps)
 
@@ -42,8 +55,8 @@ func CreateJob(inputSource string, config models.ProjectConfig, logger *lib.Logg
 		UpdatedAt:          time.Now(),
 		InputSource:        inputSource,
 		InputType:          inputType,
-		TORCHExtractionURL: "",                        // Will be set during TORCH extraction if applicable
-		CurrentStep:        string(models.StepImport), // Always start with import
+		TORCHExtractionURL: "",                   // Will be set during TORCH extraction if applicable
+		CurrentStep:        string(initialStep), // Set based on input type
 		Status:             models.JobStatusPending,
 		Steps:              steps,
 		Config:             config,

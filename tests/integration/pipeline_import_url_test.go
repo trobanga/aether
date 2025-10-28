@@ -41,7 +41,7 @@ func TestPipelineImportURL_EndToEnd(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -69,14 +69,14 @@ func TestPipelineImportURL_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Import should succeed")
 
 	// Verify import step completed
-	importStep, found := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*importedJob, models.StepHttpImport)
 	require.True(t, found, "Import step should exist")
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status, "Import step should be completed")
 	assert.Equal(t, 1, importStep.FilesProcessed, "Should download 1 file")
 	assert.Greater(t, importStep.BytesProcessed, int64(0), "Should process bytes")
 
 	// Verify file was downloaded
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepHttpImport)
 	downloadedFile := filepath.Join(importDir, "Patient.ndjson")
 	assert.FileExists(t, downloadedFile, "Downloaded file should exist")
 
@@ -124,7 +124,7 @@ func TestPipelineImportURL_WithRetry(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -145,7 +145,7 @@ func TestPipelineImportURL_WithRetry(t *testing.T) {
 	require.NoError(t, err, "Import should succeed after retries")
 	assert.Equal(t, 3, attempts, "Should make 3 attempts (2 failures + 1 success)")
 
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepHttpImport)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status, "Should complete after retry")
 }
 
@@ -172,7 +172,7 @@ func TestPipelineImportURL_LargeFile(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -192,12 +192,12 @@ func TestPipelineImportURL_LargeFile(t *testing.T) {
 	require.NoError(t, err, "Import should succeed")
 
 	// Verify large file was downloaded
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepHttpImport)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)
 	assert.Greater(t, importStep.BytesProcessed, int64(100000), "Should download significant amount of data")
 
 	// Verify file exists and has correct line count
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepHttpImport)
 	downloadedFile := filepath.Join(importDir, "large.ndjson")
 	assert.FileExists(t, downloadedFile)
 
@@ -226,7 +226,7 @@ func TestPipelineImportURL_ProgressDisplay(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -248,7 +248,7 @@ func TestPipelineImportURL_ProgressDisplay(t *testing.T) {
 	require.NoError(t, err, "Import should succeed")
 
 	// Verify download completed
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepHttpImport)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)
 	assert.Equal(t, int64(50000), importStep.BytesProcessed, "Should download exact byte count")
 }
@@ -261,7 +261,7 @@ func TestPipelineImportURL_MultipleURLs(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -298,7 +298,7 @@ func TestPipelineImportURL_MultipleURLs(t *testing.T) {
 	// Verify all jobs completed
 	assert.Len(t, jobs, 3, "Should create 3 jobs")
 	for i, job := range jobs {
-		importStep, _ := models.GetStepByName(*job, models.StepImport)
+		importStep, _ := models.GetStepByName(*job, models.StepHttpImport)
 		assert.Equal(t, models.StepStatusCompleted, importStep.Status,
 			"Job %d should have completed import step", i)
 	}
@@ -349,7 +349,7 @@ func TestPipelineImportURL_FilenameFromURL(t *testing.T) {
 			config := models.ProjectConfig{
 				JobsDir: jobsDir,
 				Pipeline: models.PipelineConfig{
-					EnabledSteps: []models.StepName{models.StepImport},
+					EnabledSteps: []models.StepName{models.StepHttpImport},
 				},
 				Retry: models.RetryConfig{
 					MaxAttempts:      3,
@@ -368,7 +368,7 @@ func TestPipelineImportURL_FilenameFromURL(t *testing.T) {
 			_, _ = pipeline.ExecuteImportStep(startedJob, logger, httpClient, false)
 
 			// Verify filename
-			importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+			importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepHttpImport)
 			downloadedFile := filepath.Join(importDir, tt.expectedFilename)
 			assert.FileExists(t, downloadedFile, "File should be saved with expected filename: %s", tt.expectedFilename)
 		})
@@ -393,7 +393,7 @@ func TestPipelineImportURL_ConcurrentDownloads(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -420,8 +420,8 @@ func TestPipelineImportURL_ConcurrentDownloads(t *testing.T) {
 	require.NoError(t, err2, "Job2 import should succeed")
 
 	// Verify separate directories
-	importDir1 := services.GetJobOutputDir(jobsDir, job1.JobID, models.StepImport)
-	importDir2 := services.GetJobOutputDir(jobsDir, job2.JobID, models.StepImport)
+	importDir1 := services.GetJobOutputDir(jobsDir, job1.JobID, models.StepHttpImport)
+	importDir2 := services.GetJobOutputDir(jobsDir, job2.JobID, models.StepHttpImport)
 
 	assert.NotEqual(t, importDir1, importDir2, "Jobs should have separate import directories")
 	assert.DirExists(t, importDir1, "Job1 import directory should exist")

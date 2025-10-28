@@ -58,7 +58,7 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepDIMP,
 			},
 		},
@@ -89,7 +89,7 @@ func TestPipelineMultiStep_AutomaticExecution(t *testing.T) {
 
 	// Verify import step completed
 	assert.Equal(t, 1, importedJob.TotalFiles, "Import should have processed 1 file")
-	importStep, found := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*importedJob, models.StepLocalImport)
 	require.True(t, found, "Import step should exist")
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status, "Import step should be completed")
 
@@ -141,7 +141,7 @@ func TestPipelineMultiStep_StepSequencing(t *testing.T) {
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepDIMP,
 				models.StepValidation,
 				models.StepCSVConversion,
@@ -151,7 +151,7 @@ func TestPipelineMultiStep_StepSequencing(t *testing.T) {
 	}
 
 	// Test GetNextStep returns steps in order
-	assert.Equal(t, models.StepDIMP, config.Pipeline.GetNextStep(models.StepImport))
+	assert.Equal(t, models.StepDIMP, config.Pipeline.GetNextStep(models.StepLocalImport))
 	assert.Equal(t, models.StepValidation, config.Pipeline.GetNextStep(models.StepDIMP))
 	assert.Equal(t, models.StepCSVConversion, config.Pipeline.GetNextStep(models.StepValidation))
 	assert.Equal(t, models.StepName(""), config.Pipeline.GetNextStep(models.StepCSVConversion), "Should return empty after last step")
@@ -175,7 +175,7 @@ func TestPipelineMultiStep_OnlyImportEnabled(t *testing.T) {
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				// Only import enabled
 			},
 		},
@@ -202,7 +202,7 @@ func TestPipelineMultiStep_OnlyImportEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to get next step - should be empty
-	nextStep := importedJob.Config.Pipeline.GetNextStep(models.StepImport)
+	nextStep := importedJob.Config.Pipeline.GetNextStep(models.StepLocalImport)
 	assert.Empty(t, nextStep, "Should have no next step when only import is enabled")
 
 	// Advance should mark job as complete
@@ -229,7 +229,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
     - csv_conversion
 
@@ -252,7 +252,7 @@ jobs_dir: "` + jobsDir + `"
 
 	// Verify all steps are present
 	assert.Len(t, config.Pipeline.EnabledSteps, 3, "Should have 3 enabled steps")
-	assert.Equal(t, models.StepImport, config.Pipeline.EnabledSteps[0])
+	assert.Equal(t, models.StepLocalImport, config.Pipeline.EnabledSteps[0])
 	assert.Equal(t, models.StepDIMP, config.Pipeline.EnabledSteps[1])
 	assert.Equal(t, models.StepCSVConversion, config.Pipeline.EnabledSteps[2])
 
@@ -295,7 +295,7 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepDIMP,
 			},
 		},
@@ -326,7 +326,7 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 	// Load job from disk and verify import step is complete
 	loadedJob1, err := pipeline.LoadJob(jobsDir, jobID)
 	require.NoError(t, err)
-	importStep, found := models.GetStepByName(*loadedJob1, models.StepImport)
+	importStep, found := models.GetStepByName(*loadedJob1, models.StepLocalImport)
 	require.True(t, found)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status, "Import step should be marked complete in saved state")
 
@@ -345,7 +345,7 @@ func TestPipelineMultiStep_JobStatePersistedBetweenSteps(t *testing.T) {
 	loadedJob2, err := pipeline.LoadJob(jobsDir, jobID)
 	require.NoError(t, err)
 
-	importStep2, found := models.GetStepByName(*loadedJob2, models.StepImport)
+	importStep2, found := models.GetStepByName(*loadedJob2, models.StepLocalImport)
 	require.True(t, found)
 	assert.Equal(t, models.StepStatusCompleted, importStep2.Status, "Import step should still be complete")
 

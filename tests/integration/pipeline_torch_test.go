@@ -139,7 +139,7 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 			},
 		},
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -172,7 +172,7 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 	assert.Contains(t, updatedJob.TORCHExtractionURL, "/fhir/extraction/")
 
 	// Verify import step completed
-	importStep, found := models.GetStepByName(*updatedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*updatedJob, models.StepTorchImport)
 	require.True(t, found)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)
 
@@ -181,7 +181,7 @@ func TestPipeline_TORCHExtraction_EndToEnd(t *testing.T) {
 	assert.Greater(t, updatedJob.TotalBytes, int64(0))
 
 	// Verify NDJSON file exists in job directory
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepTorchImport)
 	files, err := os.ReadDir(importDir)
 	require.NoError(t, err)
 	assert.NotEmpty(t, files, "Expected downloaded NDJSON files in import directory")
@@ -247,7 +247,7 @@ func TestPipeline_TORCHExtraction_EmptyResult(t *testing.T) {
 			},
 		},
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -269,7 +269,7 @@ func TestPipeline_TORCHExtraction_EmptyResult(t *testing.T) {
 	assert.NotNil(t, updatedJob)
 
 	// Import step should complete with zero files
-	importStep, found := models.GetStepByName(*updatedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*updatedJob, models.StepTorchImport)
 	require.True(t, found)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)
 	assert.Equal(t, 0, updatedJob.TotalFiles)
@@ -295,7 +295,7 @@ func TestPipeline_TORCHExtraction_ServerUnavailable(t *testing.T) {
 			},
 		},
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -388,7 +388,7 @@ func TestPipeline_DirectTORCHURL_Download(t *testing.T) {
 			},
 		},
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -417,7 +417,7 @@ func TestPipeline_DirectTORCHURL_Download(t *testing.T) {
 	assert.NotNil(t, updatedJob)
 
 	// Verify import step completed
-	importStep, found := models.GetStepByName(*updatedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*updatedJob, models.StepTorchImport)
 	require.True(t, found)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)
 
@@ -426,7 +426,7 @@ func TestPipeline_DirectTORCHURL_Download(t *testing.T) {
 	assert.Greater(t, updatedJob.TotalBytes, int64(0), "Should have non-zero bytes")
 
 	// Verify NDJSON files exist in job directory
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepTorchImport)
 	files, err := os.ReadDir(importDir)
 	require.NoError(t, err)
 	assert.NotEmpty(t, files, "Expected downloaded NDJSON files in import directory")
@@ -482,7 +482,7 @@ func TestPipeline_DirectTORCHURL_EmptyResult(t *testing.T) {
 			},
 		},
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -504,7 +504,7 @@ func TestPipeline_DirectTORCHURL_EmptyResult(t *testing.T) {
 	assert.NotNil(t, updatedJob)
 
 	// Import step should complete with zero files
-	importStep, found := models.GetStepByName(*updatedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*updatedJob, models.StepTorchImport)
 	require.True(t, found)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status)
 	assert.Equal(t, 0, updatedJob.TotalFiles, "Empty result should have zero files")
@@ -707,7 +707,7 @@ func TestPipeline_TORCHExtraction_JobResumption(t *testing.T) {
 			},
 		},
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -765,12 +765,12 @@ func TestPipeline_TORCHExtraction_JobResumption(t *testing.T) {
 	t.Logf("Phase 2: Polling resumed and completed, got %d file URL(s)", len(urls))
 
 	// Download files
-	files, err := torchClient.DownloadExtractionFiles(urls, services.GetJobOutputDir(jobsDir, reloadedJob.JobID, models.StepImport), false)
+	files, err := torchClient.DownloadExtractionFiles(urls, services.GetJobOutputDir(jobsDir, reloadedJob.JobID, models.StepTorchImport), false)
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 
 	// Verify file was downloaded correctly
-	importDir := services.GetJobOutputDir(jobsDir, reloadedJob.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, reloadedJob.JobID, models.StepTorchImport)
 	downloadedFiles, err := os.ReadDir(importDir)
 	require.NoError(t, err)
 	assert.NotEmpty(t, downloadedFiles, "Downloaded files should exist")

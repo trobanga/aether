@@ -427,7 +427,7 @@ func (c *TORCHClient) downloadFile(fileURL, destPath string) (models.FHIRDataFil
 		FilePath:     fileName, // Relative to job directory
 		ResourceType: resourceType,
 		FileSize:     bytesWritten,
-		SourceStep:   models.StepImport,
+		SourceStep:   models.StepTorchImport,
 		LineCount:    lineCount,
 		CreatedAt:    lib.GetFileModTime(destPath),
 	}, nil

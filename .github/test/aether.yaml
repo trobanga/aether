@@ -46,7 +46,7 @@ pipeline:
   # Options: import, dimp, validation, csv_conversion, parquet_conversion
   # NOTE: 'import' must always be the first step
   enabled_steps:
-    - import
+    - torch
     - dimp
     # - csv_conversion  # Commented out - service not running
     # - parquet_conversion  # Commented out - service not running

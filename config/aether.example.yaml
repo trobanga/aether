@@ -54,10 +54,14 @@ services:
 
 pipeline:
   # List of steps to execute in order
-  # Options: import, dimp, validation, csv_conversion, parquet_conversion
-  # NOTE: 'import' must always be the first step
+  # Import step options (must be first): torch, local_import, http_import
+  # Other step options: dimp, validation, csv_conversion, parquet_conversion
+  # NOTE: At least one import step must be the first enabled step
+  # NOTE: The appropriate import step is automatically selected based on input type
   enabled_steps:
-    - import
+    - torch           # TORCH import via CRTDL or direct TORCH URL
+    - local_import    # Import from local directory
+    - http_import     # Import from HTTP URL
     - dimp
     - csv_conversion
     - parquet_conversion

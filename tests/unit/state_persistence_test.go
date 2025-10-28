@@ -28,11 +28,11 @@ func TestStatePersistence_SaveAndLoad(t *testing.T) {
 		UpdatedAt:   now,
 		InputSource: "/path/to/test/data",
 		InputType:   models.InputTypeLocal,
-		CurrentStep: string(models.StepImport),
+		CurrentStep: string(models.StepLocalImport),
 		Status:      models.JobStatusInProgress,
 		Steps: []models.PipelineStep{
 			{
-				Name:           models.StepImport,
+				Name:           models.StepLocalImport,
 				Status:         models.StepStatusInProgress,
 				StartedAt:      &now,
 				FilesProcessed: 0,
@@ -42,7 +42,7 @@ func TestStatePersistence_SaveAndLoad(t *testing.T) {
 		},
 		Config: models.ProjectConfig{
 			Pipeline: models.PipelineConfig{
-				EnabledSteps: []models.StepName{models.StepImport},
+				EnabledSteps: []models.StepName{models.StepLocalImport},
 			},
 			Retry: models.RetryConfig{
 				MaxAttempts:      5,
@@ -99,7 +99,7 @@ func TestStatePersistence_AtomicWrite(t *testing.T) {
 
 	// Modify job
 	job.Status = models.JobStatusCompleted
-	job.CurrentStep = string(models.StepImport)
+	job.CurrentStep = string(models.StepLocalImport)
 	job.TotalFiles = 100
 
 	// Save again (atomic overwrite)
@@ -199,14 +199,14 @@ func TestStatePersistence_MultipleSteps(t *testing.T) {
 	// Create job with multiple steps
 	job := createTestJob(jobID, tempDir)
 	job.Config.Pipeline.EnabledSteps = []models.StepName{
-		models.StepImport,
+		models.StepLocalImport,
 		models.StepDIMP,
 		models.StepCSVConversion,
 	}
 
 	job.Steps = []models.PipelineStep{
 		{
-			Name:           models.StepImport,
+			Name:           models.StepLocalImport,
 			Status:         models.StepStatusCompleted,
 			StartedAt:      &now,
 			CompletedAt:    &completedTime,
@@ -285,11 +285,11 @@ func createTestJob(jobID, jobsDir string) *models.PipelineJob {
 		UpdatedAt:   now,
 		InputSource: "/test/data",
 		InputType:   models.InputTypeLocal,
-		CurrentStep: string(models.StepImport),
+		CurrentStep: string(models.StepLocalImport),
 		Status:      models.JobStatusPending,
 		Steps: []models.PipelineStep{
 			{
-				Name:           models.StepImport,
+				Name:           models.StepLocalImport,
 				Status:         models.StepStatusPending,
 				FilesProcessed: 0,
 				BytesProcessed: 0,
@@ -298,7 +298,7 @@ func createTestJob(jobID, jobsDir string) *models.PipelineJob {
 		},
 		Config: models.ProjectConfig{
 			Pipeline: models.PipelineConfig{
-				EnabledSteps: []models.StepName{models.StepImport},
+				EnabledSteps: []models.StepName{models.StepLocalImport},
 			},
 			Retry: models.RetryConfig{
 				MaxAttempts:      5,

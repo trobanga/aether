@@ -147,9 +147,10 @@ func (c *ProjectConfig) Validate() error {
 		return errors.New("at least one pipeline step must be enabled")
 	}
 
-	// Validate first step is always 'import'
-	if c.Pipeline.EnabledSteps[0] != StepImport {
-		return errors.New("first enabled step must be 'import'")
+	// Validate first step is always an import step
+	firstStep := c.Pipeline.EnabledSteps[0]
+	if firstStep != StepTorchImport && firstStep != StepLocalImport && firstStep != StepHttpImport {
+		return errors.New("first enabled step must be an import step (torch, local_import, or http_import)")
 	}
 
 	// Validate all enabled steps are recognized

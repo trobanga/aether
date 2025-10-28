@@ -196,7 +196,7 @@ func TestErrJobNotFound(t *testing.T) {
 
 func TestErrStepPrerequisiteNotMet(t *testing.T) {
 	stepName := models.StepDIMP
-	prerequisite := models.StepImport
+	prerequisite := models.StepLocalImport
 
 	err := lib.ErrStepPrerequisiteNotMet(stepName, prerequisite)
 

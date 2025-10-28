@@ -119,7 +119,8 @@ For basic local testing (no external services), edit `aether.yaml`:
 ```yaml
 pipeline:
   enabled_steps:
-    - import  # Only enable import step
+    - local_import  # For local directory import
+    # Or use: torch, http_import depending on your data source
 
 jobs_dir: "./jobs"
 ```
@@ -276,7 +277,7 @@ go tool pprof cpu.prof
 # aether.yaml:
 pipeline:
   enabled_steps:
-    - import
+    - local_import  # Or torch, http_import based on your source
     - dimp
 
 services:
@@ -300,7 +301,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import  # Automatically handles TORCH extraction
+    - torch  # TORCH import via CRTDL or direct TORCH URL
 
 # Submit CRTDL query
 aether pipeline start cohort-definition.crtdl
@@ -501,7 +502,9 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - torch              # TORCH import via CRTDL or direct TORCH URL
+    - local_import       # Import from local directory
+    - http_import        # Import from HTTP URL
     - dimp
     # - validation  (placeholder, not implemented)
     # - csv_conversion  (service not available yet)
@@ -696,7 +699,7 @@ See `specs/*/tasks.md` for detailed implementation tracking.
 ### General
 
 **Q: Can I run Aether without external services?**
-A: Yes! Configure only the `import` step in `pipeline.enabled_steps` to process local FHIR files without any external dependencies.
+A: Yes! Configure only the `local_import` step in `pipeline.enabled_steps` to process local FHIR files without any external dependencies.
 
 **Q: Where is job data stored?**
 A: Jobs are stored in the `jobs_dir` directory (default: `./jobs/`) as JSON state files. Each job gets a UUID subdirectory containing state and processed data.
@@ -745,7 +748,7 @@ A:
 ```yaml
 pipeline:
   enabled_steps:
-    - import
+    - local_import  # Or torch, http_import based on your data source
 jobs_dir: "./jobs"
 ```
 
