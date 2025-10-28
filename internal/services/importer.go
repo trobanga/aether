@@ -147,7 +147,7 @@ func copyFile(sourcePath string, destDir string, logger *lib.Logger) (models.FHI
 		FilePath:     fileName, // Relative to job import directory
 		ResourceType: resourceType,
 		FileSize:     bytesWritten,
-		SourceStep:   models.StepImport,
+		SourceStep:   models.StepLocalImport,
 		LineCount:    lineCount,
 		CreatedAt:    srcInfo.ModTime(),
 	}, nil

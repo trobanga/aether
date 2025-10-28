@@ -91,7 +91,7 @@ func DownloadFromURL(url string, destinationDir string, httpClient *HTTPClient, 
 		FilePath:     fileName, // Relative to job import directory
 		ResourceType: resourceType,
 		FileSize:     bytesDownloaded,
-		SourceStep:   models.StepImport,
+		SourceStep:   models.StepHttpImport,
 		LineCount:    lineCount,
 		CreatedAt:    lib.GetFileModTime(destPath),
 	}
@@ -163,7 +163,7 @@ func DownloadFromURLWithProgress(url string, destinationDir string, httpClient *
 		FilePath:     fileName,
 		ResourceType: resourceType,
 		FileSize:     bytesDownloaded,
-		SourceStep:   models.StepImport,
+		SourceStep:   models.StepHttpImport,
 		LineCount:    lineCount,
 		CreatedAt:    lib.GetFileModTime(destPath),
 	}

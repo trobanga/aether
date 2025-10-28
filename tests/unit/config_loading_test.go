@@ -32,7 +32,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
     - validation
     - csv_conversion
@@ -53,7 +53,7 @@ jobs_dir: "` + jobsDir + `"
 
 	// Verify ALL steps are loaded
 	assert.Len(t, config.Pipeline.EnabledSteps, 5, "Should have 5 enabled steps")
-	assert.Equal(t, models.StepImport, config.Pipeline.EnabledSteps[0])
+	assert.Equal(t, models.StepLocalImport, config.Pipeline.EnabledSteps[0])
 	assert.Equal(t, models.StepDIMP, config.Pipeline.EnabledSteps[1])
 	assert.Equal(t, models.StepValidation, config.Pipeline.EnabledSteps[2])
 	assert.Equal(t, models.StepCSVConversion, config.Pipeline.EnabledSteps[3])
@@ -82,7 +82,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 3
@@ -116,7 +116,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 7
@@ -149,7 +149,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -182,7 +182,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -220,7 +220,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 
 retry:
@@ -272,7 +272,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - validation
     - dimp
     - parquet_conversion
@@ -293,7 +293,7 @@ jobs_dir: "` + jobsDir + `"
 
 	// Verify steps are in the exact order specified in YAML
 	require.Len(t, config.Pipeline.EnabledSteps, 5)
-	assert.Equal(t, models.StepImport, config.Pipeline.EnabledSteps[0])
+	assert.Equal(t, models.StepLocalImport, config.Pipeline.EnabledSteps[0])
 	assert.Equal(t, models.StepValidation, config.Pipeline.EnabledSteps[1])
 	assert.Equal(t, models.StepDIMP, config.Pipeline.EnabledSteps[2])
 	assert.Equal(t, models.StepParquetConversion, config.Pipeline.EnabledSteps[3])
@@ -311,7 +311,7 @@ func TestConfigLoading_MinimalConfig(t *testing.T) {
 	configContent := `
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 3
@@ -327,7 +327,7 @@ jobs_dir: "` + jobsDir + `"
 	require.NoError(t, err, "Minimal config should load successfully")
 
 	assert.Len(t, config.Pipeline.EnabledSteps, 1)
-	assert.Equal(t, models.StepImport, config.Pipeline.EnabledSteps[0])
+	assert.Equal(t, models.StepLocalImport, config.Pipeline.EnabledSteps[0])
 	assert.Empty(t, config.Services.DIMP.URL)
 	assert.Empty(t, config.Services.CSVConversion.URL)
 	assert.Empty(t, config.Services.ParquetConversion.URL)
@@ -351,7 +351,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 3
@@ -388,7 +388,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 3
@@ -425,7 +425,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 3
@@ -468,7 +468,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -512,7 +512,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -552,7 +552,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -592,7 +592,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -633,7 +633,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -674,7 +674,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -716,7 +716,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 
 retry:
   max_attempts: 5
@@ -782,7 +782,7 @@ func TestGetServiceURL(t *testing.T) {
 	assert.Equal(t, "http://parquet.example.com:9001", config.Services.GetServiceURL(models.StepParquetConversion))
 
 	// Test unknown step
-	assert.Equal(t, "", config.Services.GetServiceURL(models.StepImport))
+	assert.Equal(t, "", config.Services.GetServiceURL(models.StepLocalImport))
 	assert.Equal(t, "", config.Services.GetServiceURL(models.StepValidation))
 }
 
@@ -791,7 +791,7 @@ func TestGetNextStep(t *testing.T) {
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepValidation,
 				models.StepDIMP,
 				models.StepCSVConversion,
@@ -800,7 +800,7 @@ func TestGetNextStep(t *testing.T) {
 	}
 
 	// Test getting next step from import
-	assert.Equal(t, models.StepValidation, config.Pipeline.GetNextStep(models.StepImport))
+	assert.Equal(t, models.StepValidation, config.Pipeline.GetNextStep(models.StepLocalImport))
 
 	// Test getting next step from validation
 	assert.Equal(t, models.StepDIMP, config.Pipeline.GetNextStep(models.StepValidation))
@@ -874,7 +874,7 @@ func TestHasServiceURL(t *testing.T) {
 		{
 			name:   "Import step (no external service needed)",
 			config: models.ServiceConfig{},
-			step:   models.StepImport,
+			step:   models.StepLocalImport,
 			hasURL: true,
 		},
 		{
@@ -910,7 +910,7 @@ func TestConfigValidation_MissingServiceURLForEnabledStep(t *testing.T) {
 				},
 				Pipeline: models.PipelineConfig{
 					EnabledSteps: []models.StepName{
-						models.StepImport,
+						models.StepLocalImport,
 						models.StepDIMP,
 					},
 				},
@@ -934,7 +934,7 @@ func TestConfigValidation_MissingServiceURLForEnabledStep(t *testing.T) {
 				},
 				Pipeline: models.PipelineConfig{
 					EnabledSteps: []models.StepName{
-						models.StepImport,
+						models.StepLocalImport,
 						models.StepCSVConversion,
 					},
 				},
@@ -955,7 +955,7 @@ func TestConfigValidation_MissingServiceURLForEnabledStep(t *testing.T) {
 				},
 				Pipeline: models.PipelineConfig{
 					EnabledSteps: []models.StepName{
-						models.StepImport,
+						models.StepLocalImport,
 						models.StepParquetConversion,
 					},
 				},
@@ -1011,7 +1011,7 @@ func TestValidateServiceConnectivity_AllServicesAvailable(t *testing.T) {
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepDIMP,
 				models.StepCSVConversion,
 				models.StepParquetConversion,
@@ -1048,7 +1048,7 @@ func TestValidateServiceConnectivity_DIMMServiceUnreachable(t *testing.T) {
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepDIMP,
 			},
 		},
@@ -1084,7 +1084,7 @@ func TestValidateServiceConnectivity_CSVServiceUnreachable(t *testing.T) {
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepCSVConversion,
 			},
 		},
@@ -1120,7 +1120,7 @@ func TestValidateServiceConnectivity_ParquetServiceUnreachable(t *testing.T) {
 		},
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepParquetConversion,
 			},
 		},
@@ -1153,7 +1153,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 
 retry:
@@ -1187,7 +1187,7 @@ services:
 
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 
 retry:

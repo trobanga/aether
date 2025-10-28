@@ -34,7 +34,7 @@ services:
 
 # Pipeline configuration
 pipeline:
-  # NOTE: import must always be the first step
+  # NOTE: One of the import step types (torch, local_import, http_import) must always be first
   enabled_steps:
     - import
     - dimp

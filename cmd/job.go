@@ -292,7 +292,9 @@ func runJobRun(cmd *cobra.Command, args []string) error {
 // validateStepName validates and converts step flag to StepName type
 func validateStepName(step string) (models.StepName, error) {
 	validSteps := map[string]models.StepName{
-		"import":             models.StepImport,
+		"torch":              models.StepTorchImport,
+		"local_import":       models.StepLocalImport,
+		"http_import":        models.StepHttpImport,
 		"dimp":               models.StepDIMP,
 		"validation":         models.StepValidation,
 		"csv_conversion":     models.StepCSVConversion,
@@ -301,7 +303,7 @@ func validateStepName(step string) (models.StepName, error) {
 
 	stepName, ok := validSteps[step]
 	if !ok {
-		return "", fmt.Errorf("invalid step name '%s'. Valid steps: import, dimp, validation, csv_conversion, parquet_conversion", step)
+		return "", fmt.Errorf("invalid step name '%s'. Valid steps: torch, local_import, http_import, dimp, validation, csv_conversion, parquet_conversion", step)
 	}
 
 	return stepName, nil
@@ -323,21 +325,38 @@ func executeStepManually(job *models.PipelineJob, stepName models.StepName, conf
 	jobDir := services.GetJobDir(config.JobsDir, job.JobID)
 
 	switch stepName {
-	case models.StepImport:
+	case models.StepTorchImport, models.StepLocalImport, models.StepHttpImport:
+		// Validate step name matches input type (imported from pipeline.go logic)
+		var expectedStep models.StepName
+		switch job.InputType {
+		case models.InputTypeCRTDL, models.InputTypeTORCHURL:
+			expectedStep = models.StepTorchImport
+		case models.InputTypeLocal:
+			expectedStep = models.StepLocalImport
+		case models.InputTypeHTTP:
+			expectedStep = models.StepHttpImport
+		default:
+			return fmt.Errorf("unknown input type: %s", job.InputType)
+		}
+
+		if stepName != expectedStep {
+			return fmt.Errorf("step '%s' does not match input type %s (expected '%s')", stepName, job.InputType, expectedStep)
+		}
+
 		// Create HTTP client
 		httpClient := services.NewHTTPClient(30*time.Second, job.Config.Retry, logger)
 		showProgress := true
 
 		importedJob, err := pipeline.ExecuteImportStep(job, logger, httpClient, showProgress)
 		if err != nil {
-			return fmt.Errorf("import step failed: %w", err)
+			return fmt.Errorf("%s step failed: %w", stepName, err)
 		}
 
 		if err := pipeline.UpdateJob(config.JobsDir, importedJob); err != nil {
 			return fmt.Errorf("failed to save job state: %w", err)
 		}
 
-		fmt.Printf("\n✓ Import step completed (%d files)\n", importedJob.TotalFiles)
+		fmt.Printf("\n✓ %s step completed (%d files)\n", stepName, importedJob.TotalFiles)
 		return nil
 
 	case models.StepDIMP:

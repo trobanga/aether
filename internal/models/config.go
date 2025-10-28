@@ -85,7 +85,7 @@ func DefaultConfig() ProjectConfig {
 			},
 		},
 		Pipeline: PipelineConfig{
-			EnabledSteps: []StepName{StepImport},
+			EnabledSteps: []StepName{StepTorchImport, StepLocalImport, StepHttpImport},
 		},
 		Retry: RetryConfig{
 			MaxAttempts:      5,

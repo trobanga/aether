@@ -119,7 +119,7 @@ func TestLoadConfig_CreateJobsDir(t *testing.T) {
 	configContent := `jobs_dir: ` + jobsDir + `
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 services:
   dimp:
@@ -176,7 +176,7 @@ func TestLoadConfig_EnvVarOverride(t *testing.T) {
 	configContent := `jobs_dir: ` + jobsDir + `
 pipeline:
   enabled_steps:
-    - import
+    - local_import
 services:
   dimp:
     url: "http://localhost:8080"
@@ -241,7 +241,7 @@ func TestLoadConfig_ParsedPipeline(t *testing.T) {
 	configContent := `jobs_dir: ` + jobsDir + `
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
     - validation
 services:
@@ -270,7 +270,7 @@ func TestLoadConfig_MultipleServices(t *testing.T) {
 	configContent := `jobs_dir: ` + jobsDir + `
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 services:
   dimp:
@@ -309,7 +309,7 @@ func TestLoadConfig_ExplicitDIMPURL(t *testing.T) {
 	configContent := `jobs_dir: ` + filepath.Join(tmpDir, "custom_jobs") + `
 pipeline:
   enabled_steps:
-    - import
+    - local_import
     - dimp
 services:
   dimp:

@@ -46,7 +46,7 @@ func TestDownloadFromURL_Success(t *testing.T) {
 	downloaded := downloadedFiles[0]
 	assert.Equal(t, "Patient.ndjson", downloaded.FileName, "FileName should be extracted from URL")
 	assert.Greater(t, downloaded.FileSize, int64(0), "FileSize should be > 0")
-	assert.Equal(t, models.StepImport, downloaded.SourceStep, "SourceStep should be import")
+	assert.Equal(t, models.StepHttpImport, downloaded.SourceStep, "SourceStep should be import")
 	assert.Equal(t, "Patient", downloaded.ResourceType, "ResourceType should be extracted from filename")
 	assert.Equal(t, 3, downloaded.LineCount, "Should count 3 lines/resources")
 

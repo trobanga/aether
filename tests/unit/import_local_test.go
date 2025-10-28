@@ -52,7 +52,7 @@ func TestImportFromLocalDirectory_Success(t *testing.T) {
 		// Verify metadata
 		assert.NotEmpty(t, imported.FileName, "FileName should be set")
 		assert.Greater(t, imported.FileSize, int64(0), "FileSize should be > 0")
-		assert.Equal(t, models.StepImport, imported.SourceStep, "SourceStep should be import")
+		assert.Equal(t, models.StepLocalImport, imported.SourceStep, "SourceStep should be import")
 		assert.Equal(t, 1, imported.LineCount, "LineCount should be 1 for single-line files")
 	}
 

@@ -10,12 +10,15 @@ import (
 )
 
 // StepPrerequisites defines which steps must complete before a given step can run
+// Note: "import" is a placeholder representing any of the three import step types
 var StepPrerequisites = map[models.StepName][]models.StepName{
-	models.StepImport:            {}, // No prerequisites - can always run
-	models.StepDIMP:              {models.StepImport},
-	models.StepValidation:        {models.StepImport}, // Can validate after import (regardless of DIMP)
-	models.StepCSVConversion:     {models.StepImport}, // Can convert original or pseudonymized data
-	models.StepParquetConversion: {models.StepImport}, // Can convert original or pseudonymized data
+	models.StepTorchImport:       {},         // No prerequisites - can always run
+	models.StepLocalImport:       {},         // No prerequisites - can always run
+	models.StepHttpImport:        {},         // No prerequisites - can always run
+	models.StepDIMP:              {"import"}, // Requires any import step to complete
+	models.StepValidation:        {"import"}, // Can validate after import (regardless of DIMP)
+	models.StepCSVConversion:     {"import"}, // Can convert original or pseudonymized data
+	models.StepParquetConversion: {"import"}, // Can convert original or pseudonymized data
 }
 
 // ValidateStepPrerequisites checks if all prerequisite steps have completed successfully
@@ -29,6 +32,23 @@ func ValidateStepPrerequisites(job models.PipelineJob, stepName models.StepName)
 
 	// Check each prerequisite
 	for _, prerequisite := range prerequisites {
+		// Special case: "import" means any import step type
+		if prerequisite == "import" {
+			// Check if any import step is completed
+			importCompleted := false
+			for _, importStep := range []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport} {
+				step, found := models.GetStepByName(job, importStep)
+				if found && step.Status == models.StepStatusCompleted {
+					importCompleted = true
+					break
+				}
+			}
+			if !importCompleted {
+				return "import", false
+			}
+			continue
+		}
+
 		step, found := models.GetStepByName(job, prerequisite)
 		if !found {
 			// Prerequisite step doesn't exist in job's step list

@@ -21,7 +21,9 @@ type PipelineStep struct {
 type StepName string
 
 const (
-	StepImport            StepName = "import"
+	StepTorchImport       StepName = "torch"              // TORCH import via CRTDL or direct TORCH URL
+	StepLocalImport       StepName = "local_import"       // Import from local directory
+	StepHttpImport        StepName = "http_import"        // Import from HTTP URL
 	StepDIMP              StepName = "dimp"
 	StepValidation        StepName = "validation"
 	StepCSVConversion     StepName = "csv_conversion"
@@ -65,7 +67,7 @@ const (
 // IsValidStepName checks if the step name is recognized
 func IsValidStepName(name StepName) bool {
 	switch name {
-	case StepImport, StepDIMP, StepValidation, StepCSVConversion, StepParquetConversion:
+	case StepTorchImport, StepLocalImport, StepHttpImport, StepDIMP, StepValidation, StepCSVConversion, StepParquetConversion:
 		return true
 	default:
 		return false

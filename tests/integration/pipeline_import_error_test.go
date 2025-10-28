@@ -28,7 +28,7 @@ func TestPipelineImportError_UnreachableURL(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -56,7 +56,7 @@ func TestPipelineImportError_UnreachableURL(t *testing.T) {
 	assert.NotNil(t, importedJob, "Job should be returned even on failure")
 
 	// Verify import step failed
-	importStep, found := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*importedJob, models.StepName(importedJob.CurrentStep))
 	require.True(t, found, "Import step should exist")
 	assert.Equal(t, models.StepStatusFailed, importStep.Status, "Import step should be failed")
 	assert.NotNil(t, importStep.LastError, "Should have error details")
@@ -74,7 +74,7 @@ func TestPipelineImportError_UnreachableURL(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed after", "Error should indicate retry attempts")
 
 	// Verify no partial file was created
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepName(job.CurrentStep))
 	files, _ := filepath.Glob(filepath.Join(importDir, "*.ndjson"))
 	assert.Empty(t, files, "No files should be created on failed download")
 }
@@ -95,7 +95,7 @@ func TestPipelineImportError_HTTP404(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      5,
@@ -117,7 +117,7 @@ func TestPipelineImportError_HTTP404(t *testing.T) {
 	assert.Contains(t, err.Error(), "404", "Error should mention HTTP status")
 
 	// Verify import step failed
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepName(importedJob.CurrentStep))
 	assert.Equal(t, models.StepStatusFailed, importStep.Status, "Import step should be failed")
 
 	// 404 is non-transient, so no retries should be attempted
@@ -146,7 +146,7 @@ func TestPipelineImportError_HTTP500WithRetry(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      maxAttempts,
@@ -175,7 +175,7 @@ func TestPipelineImportError_HTTP500WithRetry(t *testing.T) {
 	// Note: After HTTP client exhausts retries, the pipeline layer sees it as a final failure
 	// The HTTP client DID classify it as transient and retry, but after all retries fail,
 	// the pipeline marks it as failed
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepName(importedJob.CurrentStep))
 	assert.Equal(t, models.StepStatusFailed, importStep.Status)
 }
 
@@ -188,7 +188,7 @@ func TestPipelineImportError_InvalidLocalPath(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -214,7 +214,7 @@ func TestPipelineImportError_InvalidLocalPath(t *testing.T) {
 	assert.Contains(t, err.Error(), "does not exist", "Error should mention nonexistent path")
 
 	// Verify step failed with non-transient error
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepName(importedJob.CurrentStep))
 	assert.Equal(t, models.StepStatusFailed, importStep.Status)
 	assert.Equal(t, models.ErrorTypeNonTransient, importStep.LastError.Type,
 		"File not found should be non-transient")
@@ -233,7 +233,7 @@ func TestPipelineImportError_EmptyDirectory(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -255,7 +255,7 @@ func TestPipelineImportError_EmptyDirectory(t *testing.T) {
 	assert.Contains(t, err.Error(), "no FHIR NDJSON files", "Error should mention no FHIR files")
 
 	// Verify step failed
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepName(importedJob.CurrentStep))
 	assert.Equal(t, models.StepStatusFailed, importStep.Status)
 	assert.Equal(t, models.ErrorTypeNonTransient, importStep.LastError.Type)
 }
@@ -272,7 +272,7 @@ func TestPipelineImportError_PathIsFile(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -294,7 +294,7 @@ func TestPipelineImportError_PathIsFile(t *testing.T) {
 	assert.Contains(t, err.Error(), "directory", "Error should mention directory issue")
 
 	// Verify step failed
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepName(importedJob.CurrentStep))
 	assert.Equal(t, models.StepStatusFailed, importStep.Status)
 }
 
@@ -315,7 +315,7 @@ func TestPipelineImportError_NetworkTimeout(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      2,
@@ -337,7 +337,7 @@ func TestPipelineImportError_NetworkTimeout(t *testing.T) {
 	assert.Error(t, err, "Import should fail with timeout")
 
 	// Verify step failed with transient error (timeouts are retryable)
-	importStep, _ := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*importedJob, models.StepName(importedJob.CurrentStep))
 	assert.Equal(t, models.StepStatusFailed, importStep.Status)
 	assert.Equal(t, models.ErrorTypeTransient, importStep.LastError.Type,
 		"Timeout errors should be transient")
@@ -359,7 +359,7 @@ func TestPipelineImportError_StatePersistence(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      3,
@@ -389,7 +389,7 @@ func TestPipelineImportError_StatePersistence(t *testing.T) {
 	assert.Equal(t, importedJob.Status, reloadedJob.Status, "Status should be persisted")
 	assert.NotEmpty(t, reloadedJob.ErrorMessage, "Error message should be persisted")
 
-	reloadedImportStep, _ := models.GetStepByName(*reloadedJob, models.StepImport)
+	reloadedImportStep, _ := models.GetStepByName(*reloadedJob, models.StepName(reloadedJob.CurrentStep))
 	assert.Equal(t, models.StepStatusFailed, reloadedImportStep.Status, "Step status should be persisted")
 	assert.NotNil(t, reloadedImportStep.LastError, "Error details should be persisted")
 	assert.Equal(t, models.ErrorTypeNonTransient, reloadedImportStep.LastError.Type,
@@ -416,7 +416,7 @@ func TestPipelineImportError_PartialDownloadCleanup(t *testing.T) {
 	config := models.ProjectConfig{
 		JobsDir: jobsDir,
 		Pipeline: models.PipelineConfig{
-			EnabledSteps: []models.StepName{models.StepImport},
+			EnabledSteps: []models.StepName{models.StepTorchImport, models.StepLocalImport, models.StepHttpImport},
 		},
 		Retry: models.RetryConfig{
 			MaxAttempts:      2,
@@ -437,7 +437,7 @@ func TestPipelineImportError_PartialDownloadCleanup(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify no partial files remain
-	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepImport)
+	importDir := services.GetJobOutputDir(jobsDir, job.JobID, models.StepName(job.CurrentStep))
 	files, _ := filepath.Glob(filepath.Join(importDir, "*.ndjson"))
 	assert.Empty(t, files, "No partial files should remain after failed download")
 }

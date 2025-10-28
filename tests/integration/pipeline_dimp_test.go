@@ -248,7 +248,7 @@ func TestPipelineDIMP_StepDisabled(t *testing.T) {
 	//     Config: models.ProjectConfig{
 	//         Pipeline: models.PipelineConfig{
 	//             EnabledSteps: []models.StepName{
-	//                 models.StepImport,
+	//                 models.StepLocalImport,
 	//                 // DIMP not enabled
 	//                 models.StepValidation,
 	//             },

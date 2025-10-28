@@ -29,7 +29,7 @@ func TestPipelineResume_AfterImportComplete(t *testing.T) {
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepDIMP,
 				models.StepCSVConversion,
 			},
@@ -70,7 +70,7 @@ func TestPipelineResume_AfterImportComplete(t *testing.T) {
 	require.Equal(t, 5, importedJob.TotalFiles, "Should import 5 files")
 
 	// Verify import step is completed
-	importStep, found := models.GetStepByName(*importedJob, models.StepImport)
+	importStep, found := models.GetStepByName(*importedJob, models.StepLocalImport)
 	require.True(t, found, "Import step should exist")
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status, "Import step should be completed")
 
@@ -96,7 +96,7 @@ func TestPipelineResume_AfterImportComplete(t *testing.T) {
 	assert.Equal(t, models.JobStatusInProgress, reloadedJob.Status, "Job status should be in_progress")
 
 	// Verify: Import step is still completed
-	reloadedImportStep, found := models.GetStepByName(*reloadedJob, models.StepImport)
+	reloadedImportStep, found := models.GetStepByName(*reloadedJob, models.StepLocalImport)
 	require.True(t, found, "Import step should exist after reload")
 	assert.Equal(t, models.StepStatusCompleted, reloadedImportStep.Status, "Import step should still be completed")
 	assert.NotNil(t, reloadedImportStep.CompletedAt, "Import step should have completion time")
@@ -109,7 +109,7 @@ func TestPipelineResume_AfterImportComplete(t *testing.T) {
 
 	// Verify: Config is preserved
 	assert.Equal(t, 3, len(reloadedJob.Config.Pipeline.EnabledSteps), "Config should preserve all enabled steps")
-	assert.Equal(t, models.StepImport, reloadedJob.Config.Pipeline.EnabledSteps[0])
+	assert.Equal(t, models.StepLocalImport, reloadedJob.Config.Pipeline.EnabledSteps[0])
 	assert.Equal(t, models.StepDIMP, reloadedJob.Config.Pipeline.EnabledSteps[1])
 	assert.Equal(t, models.StepCSVConversion, reloadedJob.Config.Pipeline.EnabledSteps[2])
 }
@@ -186,7 +186,7 @@ func TestPipelineResume_MultipleStepsCompleted(t *testing.T) {
 	assert.Equal(t, string(models.StepCSVConversion), reloadedJob.CurrentStep, "Should advance to CSV conversion")
 
 	// Verify: Previous steps are completed
-	importStep, _ := models.GetStepByName(*reloadedJob, models.StepImport)
+	importStep, _ := models.GetStepByName(*reloadedJob, models.StepLocalImport)
 	assert.Equal(t, models.StepStatusCompleted, importStep.Status, "Import should be completed")
 
 	dimpStep, _ = models.GetStepByName(*reloadedJob, models.StepDIMP)
@@ -285,7 +285,7 @@ func createCompletedImportJob(t *testing.T, jobsDir string, fileCount int) *mode
 	config := models.ProjectConfig{
 		Pipeline: models.PipelineConfig{
 			EnabledSteps: []models.StepName{
-				models.StepImport,
+				models.StepLocalImport,
 				models.StepDIMP,
 				models.StepCSVConversion,
 			},

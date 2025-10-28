@@ -11,29 +11,29 @@ import (
 )
 
 func TestValidateStepPrerequisites_ImportHasNone(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport})
+	job := createTestJob([]models.StepName{models.StepLocalImport})
 
-	prerequisite, canRun := lib.ValidateStepPrerequisites(job, models.StepImport)
+	prerequisite, canRun := lib.ValidateStepPrerequisites(job, models.StepLocalImport)
 
 	assert.True(t, canRun)
 	assert.Equal(t, models.StepName(""), prerequisite)
 }
 
 func TestValidateStepPrerequisites_DIMPRequiresImport(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport, models.StepDIMP})
+	job := createTestJob([]models.StepName{models.StepLocalImport, models.StepDIMP})
 
 	// Import not completed yet
 	prerequisite, canRun := lib.ValidateStepPrerequisites(job, models.StepDIMP)
 
 	assert.False(t, canRun)
-	assert.Equal(t, models.StepImport, prerequisite)
+	assert.Equal(t, models.StepName("import"), prerequisite) // Returns "import" placeholder
 }
 
 func TestValidateStepPrerequisites_DIMPAllowedAfterImport(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport, models.StepDIMP})
+	job := createTestJob([]models.StepName{models.StepLocalImport, models.StepDIMP})
 
 	// Mark import as completed
-	importStep, _ := models.GetStepByName(job, models.StepImport)
+	importStep, _ := models.GetStepByName(job, models.StepLocalImport)
 	importStep = models.CompleteStep(importStep, 10, 1000)
 	job = models.ReplaceStep(job, importStep)
 
@@ -45,20 +45,20 @@ func TestValidateStepPrerequisites_DIMPAllowedAfterImport(t *testing.T) {
 }
 
 func TestValidateStepPrerequisites_CSVRequiresImport(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport, models.StepCSVConversion})
+	job := createTestJob([]models.StepName{models.StepLocalImport, models.StepCSVConversion})
 
 	// Import not completed
 	prerequisite, canRun := lib.ValidateStepPrerequisites(job, models.StepCSVConversion)
 
 	assert.False(t, canRun)
-	assert.Equal(t, models.StepImport, prerequisite)
+	assert.Equal(t, models.StepName("import"), prerequisite) // Returns "import" placeholder
 }
 
 func TestValidateStepPrerequisites_CSVAllowedAfterImport(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport, models.StepCSVConversion})
+	job := createTestJob([]models.StepName{models.StepLocalImport, models.StepCSVConversion})
 
 	// Mark import as completed
-	importStep, _ := models.GetStepByName(job, models.StepImport)
+	importStep, _ := models.GetStepByName(job, models.StepLocalImport)
 	importStep = models.CompleteStep(importStep, 5, 500)
 	job = models.ReplaceStep(job, importStep)
 
@@ -70,13 +70,13 @@ func TestValidateStepPrerequisites_CSVAllowedAfterImport(t *testing.T) {
 }
 
 func TestValidateStepPrerequisites_ValidationRequiresImport(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport, models.StepValidation})
+	job := createTestJob([]models.StepName{models.StepLocalImport, models.StepValidation})
 
 	// Import not completed
 	prerequisite, canRun := lib.ValidateStepPrerequisites(job, models.StepValidation)
 
 	assert.False(t, canRun)
-	assert.Equal(t, models.StepImport, prerequisite)
+	assert.Equal(t, models.StepName("import"), prerequisite) // Returns "import" placeholder
 }
 
 func TestValidateStepPrerequisites_PrerequisiteNotEnabled(t *testing.T) {
@@ -84,15 +84,15 @@ func TestValidateStepPrerequisites_PrerequisiteNotEnabled(t *testing.T) {
 	job := createTestJob([]models.StepName{models.StepDIMP})
 
 	// DIMP requires import, but import is not in the step list
-	// Validation should allow this (trust config - if import is disabled, DIMP has no prerequisites)
+	// Validation should fail since no import step is completed
 	prerequisite, canRun := lib.ValidateStepPrerequisites(job, models.StepDIMP)
 
-	assert.True(t, canRun) // Prerequisite not enabled means it doesn't block
-	assert.Equal(t, models.StepName(""), prerequisite)
+	assert.False(t, canRun) // Import prerequisite not met
+	assert.Equal(t, models.StepName("import"), prerequisite)
 }
 
 func TestValidateStepPrerequisites_UnknownStep(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport})
+	job := createTestJob([]models.StepName{models.StepLocalImport})
 
 	// Unknown step name
 	prerequisite, canRun := lib.ValidateStepPrerequisites(job, models.StepName("unknown"))
@@ -102,36 +102,36 @@ func TestValidateStepPrerequisites_UnknownStep(t *testing.T) {
 }
 
 func TestCanRunStep_Wrapper(t *testing.T) {
-	job := createTestJob([]models.StepName{models.StepImport, models.StepDIMP})
+	job := createTestJob([]models.StepName{models.StepLocalImport, models.StepDIMP})
 
 	// Import not completed
 	canRun, prerequisite := lib.CanRunStep(job, models.StepDIMP)
 
 	assert.False(t, canRun)
-	assert.Equal(t, models.StepImport, prerequisite)
+	assert.Equal(t, models.StepName("import"), prerequisite) // Returns "import" placeholder
 }
 
 func TestGetStepDependencies_Import(t *testing.T) {
-	deps := lib.GetStepDependencies(models.StepImport)
+	deps := lib.GetStepDependencies(models.StepLocalImport)
 	assert.Empty(t, deps)
 }
 
 func TestGetStepDependencies_DIMP(t *testing.T) {
 	deps := lib.GetStepDependencies(models.StepDIMP)
 	require.Len(t, deps, 1)
-	assert.Equal(t, models.StepImport, deps[0])
+	assert.Equal(t, models.StepName("import"), deps[0]) // Returns "import" placeholder
 }
 
 func TestGetStepDependencies_CSV(t *testing.T) {
 	deps := lib.GetStepDependencies(models.StepCSVConversion)
 	require.Len(t, deps, 1)
-	assert.Equal(t, models.StepImport, deps[0])
+	assert.Equal(t, models.StepName("import"), deps[0]) // Returns "import" placeholder
 }
 
 func TestGetStepDependencies_Parquet(t *testing.T) {
 	deps := lib.GetStepDependencies(models.StepParquetConversion)
 	require.Len(t, deps, 1)
-	assert.Equal(t, models.StepImport, deps[0])
+	assert.Equal(t, models.StepName("import"), deps[0]) // Returns "import" placeholder
 }
 
 func TestGetStepDependencies_UnknownStep(t *testing.T) {
@@ -143,26 +143,26 @@ func TestGetStepDependencies_UnknownStep(t *testing.T) {
 func TestValidation_PipelineSequence(t *testing.T) {
 	// Full pipeline: Import -> DIMP -> CSV -> Parquet
 	job := createTestJob([]models.StepName{
-		models.StepImport,
+		models.StepLocalImport,
 		models.StepDIMP,
 		models.StepCSVConversion,
 		models.StepParquetConversion,
 	})
 
 	// Initially, only import can run
-	canRun, _ := lib.CanRunStep(job, models.StepImport)
+	canRun, _ := lib.CanRunStep(job, models.StepLocalImport)
 	assert.True(t, canRun)
 
 	canRun, prereq := lib.CanRunStep(job, models.StepDIMP)
 	assert.False(t, canRun)
-	assert.Equal(t, models.StepImport, prereq)
+	assert.Equal(t, models.StepName("import"), prereq) // Returns "import" placeholder
 
 	canRun, prereq = lib.CanRunStep(job, models.StepCSVConversion)
 	assert.False(t, canRun)
-	assert.Equal(t, models.StepImport, prereq)
+	assert.Equal(t, models.StepName("import"), prereq) // Returns "import" placeholder
 
 	// Complete import
-	importStep, _ := models.GetStepByName(job, models.StepImport)
+	importStep, _ := models.GetStepByName(job, models.StepLocalImport)
 	importStep = models.CompleteStep(importStep, 10, 1000)
 	job = models.ReplaceStep(job, importStep)
 
