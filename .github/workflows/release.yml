@@ -7,8 +7,7 @@ on:
       - 'docs/**'
 
 permissions:
-  contents: write
-  attestations: write
+  contents: read
 
 jobs:
   test:
@@ -169,6 +168,8 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [build]
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
@@ -194,6 +195,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [build]
     timeout-minutes: 30
+    permissions:
+      attestations: write
+      contents: read
     strategy:
       matrix:
         include:
