@@ -39,7 +39,6 @@ echo "Running aether with config: ${CONFIG_FILE}"
 echo "Environment variables:"
 echo "  DIMP_URL=${DIMP_URL}"
 echo "  TORCH_URL=${TORCH_URL}"
-echo "  TORCH_FILE_SERVER_URL=${TORCH_FILE_SERVER_URL}"
 echo "  VFPS_URL=${VFPS_URL}"
 
 # Change to test directory and run aether with the configuration

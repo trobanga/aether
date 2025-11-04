@@ -64,7 +64,6 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 		Services: models.ServiceConfig{
 			TORCH: models.TORCHConfig{
 				BaseURL:                   expandEnvVars(viper.GetString("services.torch.base_url")),
-				FileServerURL:             expandEnvVars(viper.GetString("services.torch.file_server_url")),
 				Username:                  expandEnvVars(viper.GetString("services.torch.username")),
 				Password:                  expandEnvVars(viper.GetString("services.torch.password")),
 				ExtractionTimeoutMinutes:  viper.GetInt("services.torch.extraction_timeout_minutes"),

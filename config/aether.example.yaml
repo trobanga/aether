@@ -9,11 +9,6 @@ services:
     # TORCH server base URL
     base_url: "http://localhost:8080"
 
-    # TORCH file server URL (optional - for downloading extraction files)
-    # If not specified, uses base_url for file downloads
-    # In Docker setups, this is typically the nginx container serving the output files
-    file_server_url: "http://localhost:8082"
-
     # TORCH authentication credentials
     username: "test"
     password: "test"
@@ -56,8 +51,9 @@ pipeline:
   # List of steps to execute in order
   # Import step options (must be first): torch, local_import, http_import
   # Other step options: dimp, validation, csv_conversion, parquet_conversion
-  # NOTE: At least one import step must be the first enabled step
-  # NOTE: The appropriate import step is automatically selected based on input type
+  # NOTE: At least one import step must be first in enabled_steps
+  # NOTE: Enable all the import types you want to support - the system will automatically
+  #       use the correct one based on your input (TORCH URL → torch, local dir → local_import, etc.)
   enabled_steps:
     - torch           # TORCH import via CRTDL or direct TORCH URL
     - local_import    # Import from local directory

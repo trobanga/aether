@@ -4,7 +4,7 @@ networks:
   torch:
 
 services:
-  torch-file-server:
+  torch-proxy:
       networks: [ "aether", "torch" ]
       restart: unless-stopped
       image: nginxinc/nginx-unprivileged:1.27-alpine
@@ -17,16 +17,19 @@ services:
   torch:
     restart: unless-stopped
     image: ghcr.io/medizininformatik-initiative/torch:1.0.0-alpha.11
+    # image: torch:latest
     networks: [ "aether", "torch" ]
     ports:
       - ":8080"
-      - "9010:9010"  # JMX port for VisualVM profiling
     environment:
       TORCH_RESULTS_PERSISTENCE: PT12H30M5S
       TORCH_BUFFERSIZE: 100
       # Connection Config
+      # Note: TORCH_BASE_URL should be the reverse proxy (nginx) for external access
+      # Internally TORCH uses torch:8080, but clients should use the proxy
       TORCH_BASE_URL: http://torch:8080
-      TORCH_OUTPUT_FILE_SERVER_URL: http://torch-file-server:80
+      # Proxy points to nginx reverse proxy which routes both API and file requests
+      TORCH_OUTPUT_FILE_SERVER_URL: http://torch-proxy:80
       TORCH_FLARE_URL: http://torch-flare:8080
       TORCH_FHIR_URL: http://torch-hds:8080/fhir
       # Execution variables

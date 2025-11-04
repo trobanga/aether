@@ -257,19 +257,6 @@ services:
 - `polling_interval_seconds`: Initial poll interval (increases exponentially up to max)
 - `max_polling_interval_seconds`: Maximum poll interval between checks
 
-### File Server Configuration
-
-If your TORCH has a separate file download server:
-
-```yaml
-services:
-  torch:
-    base_url: "https://torch.hospital.org"
-    file_server_url: "http://torch-files.hospital.org"
-    username: "researcher"
-    password: "secret"
-```
-
 ## Error Handling
 
 Aether implements robust error handling for TORCH operations:

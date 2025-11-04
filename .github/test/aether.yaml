@@ -3,11 +3,8 @@
 
 services:
   torch:
-    # TORCH server base URL
+    # TORCH server base URL (points to reverse proxy that handles both API and file serving)
     base_url: "${TORCH_URL}"
-
-    # TORCH file server URL (nginx for downloading extraction results)
-    file_server_url: "${TORCH_FILE_SERVER_URL}"
 
     # TORCH authentication credentials
     username: ""

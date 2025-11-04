@@ -12,7 +12,6 @@ services:
   # TORCH FHIR server (optional)
   torch:
     base_url: "http://localhost:8080"
-    file_server_url: "http://localhost:8082"
     username: "researcher"
     password: "password"
     extraction_timeout_minutes: 30
@@ -81,7 +80,6 @@ Endpoints for converting FHIR data to other formats (CSV, Parquet).
 services:
   torch:
     base_url: "http://torch.hospital.org"
-    file_server_url: "http://localhost:8082"
     username: "researcher-name"
     password: "secure-password"
     extraction_timeout_minutes: 30
@@ -90,7 +88,6 @@ services:
 ```
 Credentials and configuration for TORCH FHIR server integration:
 - `base_url`: TORCH API endpoint
-- `file_server_url`: File download server (default: uses base_url)
 - `extraction_timeout_minutes`: Max wait for extraction (default: 30)
 - `polling_interval_seconds`: Initial poll interval (default: 5)
 - `max_polling_interval_seconds`: Max poll interval (default: 30)
@@ -173,7 +170,6 @@ Extract minimized data from TORCH using a CRTDL query, then apply pseudonymizati
 services:
   torch:
     base_url: "http://torch.hospital.org"
-    file_server_url: "http://localhost:8082"
     username: "researcher"
     password: "secret"
     extraction_timeout_minutes: 30

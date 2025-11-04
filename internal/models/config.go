@@ -40,7 +40,6 @@ type ParquetConversionConfig struct {
 // TORCHConfig contains TORCH server connection and extraction behavior settings
 type TORCHConfig struct {
 	BaseURL                   string `yaml:"base_url" json:"base_url"`
-	FileServerURL             string `yaml:"file_server_url" json:"file_server_url"` // URL for downloading extraction files (nginx)
 	Username                  string `yaml:"username" json:"username"`
 	Password                  string `yaml:"password" json:"password"`
 	ExtractionTimeoutMinutes  int    `yaml:"extraction_timeout_minutes" json:"extraction_timeout_minutes"`
@@ -76,7 +75,6 @@ func DefaultConfig() ProjectConfig {
 			},
 			TORCH: TORCHConfig{
 				BaseURL:                   "",
-				FileServerURL:             "",
 				Username:                  "",
 				Password:                  "",
 				ExtractionTimeoutMinutes:  30,

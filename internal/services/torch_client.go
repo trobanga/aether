@@ -179,9 +179,8 @@ func (c *TORCHClient) SubmitExtraction(crtdlPath string) (string, error) {
 		return "", fmt.Errorf("TORCH server did not return Content-Location header")
 	}
 
-	// Normalize URL to use our configured base URL (handles Docker internal URLs)
-	contentLocation = c.normalizeURL(contentLocation)
-
+	// Ensure URL is absolute (handle relative URLs from TORCH)
+	contentLocation = c.makeAbsoluteURL(contentLocation)
 	c.logger.Info("TORCH extraction submitted successfully", "extraction_url", contentLocation)
 
 	return contentLocation, nil
@@ -369,11 +368,8 @@ func (c *TORCHClient) downloadFile(fileURL, destPath string) (models.FHIRDataFil
 		return models.FHIRDataFile{}, fmt.Errorf("failed to create download request: %w", err)
 	}
 
-	// Only add authentication if downloading from TORCH API server (not file server)
-	// File servers (nginx) typically don't require auth
-	if c.config.FileServerURL == "" || !strings.Contains(fileURL, c.config.FileServerURL) {
-		req.Header.Set("Authorization", c.buildBasicAuthHeader())
-	}
+	// Add authentication header for TORCH requests
+	req.Header.Set("Authorization", c.buildBasicAuthHeader())
 	req.Header.Set("Accept", "application/fhir+ndjson")
 
 	// Send request
@@ -561,8 +557,8 @@ func (c *TORCHClient) extractURLsFromSimpleFormat(result TORCHSimpleResponse) []
 	fileURLs := []string{}
 	for _, output := range result.Output {
 		if output.URL != "" {
-			normalizedURL := c.normalizeURL(output.URL)
-			fileURLs = append(fileURLs, normalizedURL)
+			// Ensure URL is absolute (handle relative URLs from TORCH)
+			fileURLs = append(fileURLs, c.makeAbsoluteURL(output.URL))
 		}
 	}
 	c.logger.Debug("Extracted URLs from simple format", "file_count", len(fileURLs))
@@ -576,8 +572,8 @@ func (c *TORCHClient) extractURLsFromFHIRFormat(result TORCHExtractionResult) []
 		if param.Name == "output" {
 			for _, part := range param.Part {
 				if part.Name == "url" && part.ValueURL != "" {
-					normalizedURL := c.normalizeURL(part.ValueURL)
-					fileURLs = append(fileURLs, normalizedURL)
+					// Ensure URL is absolute (handle relative URLs from TORCH)
+					fileURLs = append(fileURLs, c.makeAbsoluteURL(part.ValueURL))
 				}
 			}
 		}
@@ -586,48 +582,73 @@ func (c *TORCHClient) extractURLsFromFHIRFormat(result TORCHExtractionResult) []
 	return fileURLs
 }
 
-// normalizeURL ensures URLs use the configured base URL instead of internal Docker URLs
-// For file downloads, uses FileServerURL; for status polling, uses BaseURL
-func (c *TORCHClient) normalizeURL(rawURL string) string {
-	// Determine which base URL to use based on the URL pattern
-	baseURL := c.config.BaseURL
-
-	c.logger.Debug("URL normalization starting",
-		"raw_url", rawURL,
-		"base_url", c.config.BaseURL,
-		"file_server_url", c.config.FileServerURL)
-
-	// If URL looks like a file download (contains file extension or not a status URL), use file server URL
-	if c.config.FileServerURL != "" && !strings.Contains(rawURL, "__status") && !strings.Contains(rawURL, "$extract-data") {
-		baseURL = c.config.FileServerURL
-		c.logger.Debug("Using file server URL for download", "file_server_url", baseURL)
-	}
-
-	// If absolute URL, extract path and combine with appropriate base URL
-	if strings.HasPrefix(rawURL, "http://") || strings.HasPrefix(rawURL, "https://") {
-		parsedURL, err := url.Parse(rawURL)
-		if err != nil {
-			c.logger.Warn("Failed to parse URL, using as-is", "url", rawURL, "error", err)
-			return rawURL
-		}
-
-		// Rebuild URL with appropriate base URL host/port
-		normalizedURL := baseURL + parsedURL.Path
-		if parsedURL.RawQuery != "" {
-			normalizedURL += "?" + parsedURL.RawQuery
-		}
-
-		c.logger.Debug("Normalized URL", "original", rawURL, "normalized", normalizedURL, "base_used", baseURL)
-		return normalizedURL
-	}
-
-	// Relative URL - prepend appropriate base URL
-	return baseURL + rawURL
-}
-
 // buildBasicAuthHeader creates Basic authentication header
 func (c *TORCHClient) buildBasicAuthHeader() string {
 	credentials := c.config.Username + ":" + c.config.Password
 	encoded := base64.StdEncoding.EncodeToString([]byte(credentials))
 	return "Basic " + encoded
+}
+
+// makeAbsoluteURL ensures a URL is absolute and uses the configured baseURL
+// This handles two cases:
+// 1. Relative URLs from TORCH - prepends baseURL (scheme + host)
+// 2. Absolute URLs with internal TORCH hostnames - rewrites scheme + host to use baseURL
+func (c *TORCHClient) makeAbsoluteURL(rawURL string) string {
+	// Case 1: Relative URL - prepend base URL
+	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
+		absoluteURL := c.config.BaseURL + rawURL
+		c.logger.Debug("Converted relative URL", "raw", rawURL, "absolute", absoluteURL)
+		return absoluteURL
+	}
+
+	// Case 2: Absolute URL - check if it's an internal TORCH URL that needs rewriting
+	torchURL, err := url.Parse(rawURL)
+	if err != nil {
+		// If parsing fails, return as-is
+		c.logger.Warn("Failed to parse TORCH URL", "url", rawURL, "error", err)
+		return rawURL
+	}
+
+	// Check if this is an internal hostname that should be rewritten to use our configured baseURL
+	// Internal hostnames include:
+	// - torch: TORCH API service (container internal)
+	// - torch-proxy: reverse proxy service (container internal)
+	// - localhost/127.0.0.1: loopback addresses used internally
+	hostname := torchURL.Hostname()
+	internalHosts := map[string]bool{
+		"torch":        true,
+		"torch-proxy":  true,
+		"localhost":    true,
+		"127.0.0.1":    true,
+	}
+
+	if internalHosts[hostname] {
+		// This is an internal TORCH URL - rewrite to use our baseURL's scheme and host
+		baseURLParsed, err := url.Parse(c.config.BaseURL)
+		if err != nil {
+			c.logger.Warn("Failed to parse baseURL", "baseURL", c.config.BaseURL, "error", err)
+			return rawURL
+		}
+
+		// Create new URL with baseURL's scheme and host, but TORCH URL's path and query
+		rewrittenURL := &url.URL{
+			Scheme:   baseURLParsed.Scheme,
+			Host:     baseURLParsed.Host,           // includes port if present
+			Path:     torchURL.Path,
+			RawQuery: torchURL.RawQuery,
+		}
+
+		result := rewrittenURL.String()
+		c.logger.Debug("Rewrote internal URL",
+			"original", rawURL,
+			"hostname", hostname,
+			"baseScheme", baseURLParsed.Scheme,
+			"baseHost", baseURLParsed.Host,
+			"rewritten", result)
+		return result
+	}
+
+	// External URL - return as-is
+	c.logger.Debug("Keeping external URL as-is", "url", rawURL, "hostname", hostname)
+	return rawURL
 }
