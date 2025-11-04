@@ -15,9 +15,9 @@ import (
 // TestExpandEnvVars tests environment variable expansion
 func TestExpandEnvVars(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  string
-		envVars map[string]string
+		name     string
+		input    string
+		envVars  map[string]string
 		expected string
 	}{
 		{

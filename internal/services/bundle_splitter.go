@@ -11,14 +11,14 @@
 //   - Order Preservation: Bundle entry order is guaranteed to be preserved during splitting and reassembly
 //
 // Splitting Algorithm (Greedy Partitioning):
-//   1. Calculate total Bundle size using JSON marshaling
-//   2. If size <= threshold: return unchanged (no splitting needed)
-//   3. Otherwise, partition entries greedily:
-//      - Iterate through entries in order
-//      - Accumulate entries in current chunk while under threshold
-//      - When adding next entry would exceed threshold, start new chunk
-//      - Continue until all entries are partitioned
-//   4. Create chunks as valid FHIR R4 Bundles with metadata from original
+//  1. Calculate total Bundle size using JSON marshaling
+//  2. If size <= threshold: return unchanged (no splitting needed)
+//  3. Otherwise, partition entries greedily:
+//     - Iterate through entries in order
+//     - Accumulate entries in current chunk while under threshold
+//     - When adding next entry would exceed threshold, start new chunk
+//     - Continue until all entries are partitioned
+//  4. Create chunks as valid FHIR R4 Bundles with metadata from original
 //
 // Performance Characteristics:
 //   - Size Calculation: O(n) where n = Bundle size in bytes (JSON marshal)
@@ -27,22 +27,22 @@
 //   - Memory: O(Bundle size) - all data structures fit in memory for chunks <10MB
 //
 // Example Usage:
-//   // Check if splitting needed
-//   size, _ := models.CalculateJSONSize(bundle)
-//   if ShouldSplit(size, thresholdBytes) {
-//       // Split Bundle
-//       result, _ := SplitBundle(bundle, thresholdBytes)
 //
-//       // Process each chunk
-//       for _, chunk := range result.Chunks {
-//           pseudonymized := callDIMPService(models.ConvertChunkToBundle(chunk))
-//           // Collect pseudonymized chunk...
-//       }
+//	// Check if splitting needed
+//	size, _ := models.CalculateJSONSize(bundle)
+//	if ShouldSplit(size, thresholdBytes) {
+//	    // Split Bundle
+//	    result, _ := SplitBundle(bundle, thresholdBytes)
 //
-//       // Reassemble chunks
-//       final, _ := ReassembleBundle(result.Metadata, pseudonymizedChunks)
-//   }
+//	    // Process each chunk
+//	    for _, chunk := range result.Chunks {
+//	        pseudonymized := callDIMPService(models.ConvertChunkToBundle(chunk))
+//	        // Collect pseudonymized chunk...
+//	    }
 //
+//	    // Reassemble chunks
+//	    final, _ := ReassembleBundle(result.Metadata, pseudonymizedChunks)
+//	}
 package services
 
 import (
@@ -55,11 +55,13 @@ import (
 // Pure function: Takes bundle size and threshold, returns boolean decision
 //
 // Parameters:
-//   bundleSizeBytes - The serialized size of the Bundle in bytes
-//   thresholdBytes - The configured split threshold in bytes
+//
+//	bundleSizeBytes - The serialized size of the Bundle in bytes
+//	thresholdBytes - The configured split threshold in bytes
 //
 // Returns:
-//   true if Bundle should be split (size > threshold), false otherwise
+//
+//	true if Bundle should be split (size > threshold), false otherwise
 //
 // WHY: Provides clear decision point for splitting logic, avoiding redundant size checks
 func ShouldSplit(bundleSizeBytes int, thresholdBytes int) bool {
@@ -76,12 +78,14 @@ func ShouldSplit(bundleSizeBytes int, thresholdBytes int) bool {
 //   - Preserve entry order naturally (no sorting or reordering)
 //
 // Parameters:
-//   entries - Array of Bundle entry objects (must not be empty)
-//   thresholdBytes - Maximum size per chunk in bytes
+//
+//	entries - Array of Bundle entry objects (must not be empty)
+//	thresholdBytes - Maximum size per chunk in bytes
 //
 // Returns:
-//   Array of entry partitions (each partition is an array of entries)
-//   Error if any entry exceeds threshold (cannot split single entry)
+//
+//	Array of entry partitions (each partition is an array of entries)
+//	Error if any entry exceeds threshold (cannot split single entry)
 //
 // WHY: Maximizes chunk sizes (fewer HTTP requests) while respecting threshold
 // WHY: Simple greedy algorithm over complex bin-packing (KISS principle)
@@ -161,21 +165,23 @@ func PartitionEntries(entries []map[string]any, thresholdBytes int) ([][]map[str
 // Pure function: Takes Bundle and threshold, returns SplitResult (no side effects)
 //
 // Process:
-//   1. Calculate Bundle size
-//   2. Check if splitting needed (size > threshold)
-//   3. If not needed, return single-chunk result
-//   4. If needed, extract metadata and entries
-//   5. Partition entries using greedy algorithm
-//   6. Create Bundle chunks from partitions
-//   7. Return complete SplitResult
+//  1. Calculate Bundle size
+//  2. Check if splitting needed (size > threshold)
+//  3. If not needed, return single-chunk result
+//  4. If needed, extract metadata and entries
+//  5. Partition entries using greedy algorithm
+//  6. Create Bundle chunks from partitions
+//  7. Return complete SplitResult
 //
 // Parameters:
-//   bundle - FHIR Bundle as JSON object (must have id, type, entry fields)
-//   thresholdBytes - Split threshold in bytes (typically 10MB = 10*1024*1024)
+//
+//	bundle - FHIR Bundle as JSON object (must have id, type, entry fields)
+//	thresholdBytes - Split threshold in bytes (typically 10MB = 10*1024*1024)
 //
 // Returns:
-//   SplitResult containing metadata, chunks, and statistics
-//   Error if Bundle is invalid or splitting fails
+//
+//	SplitResult containing metadata, chunks, and statistics
+//	Error if Bundle is invalid or splitting fails
 //
 // WHY: Central splitting logic - encapsulates entire split operation as pure function
 // WHY: Returns immutable result structure (functional programming principle)
@@ -251,18 +257,20 @@ func SplitBundle(bundle map[string]any, thresholdBytes int) (models.SplitResult,
 // Pure function: Takes metadata and pseudonymized chunks, returns reassembled Bundle
 //
 // Process:
-//   1. Create new Bundle with original metadata (id, type, timestamp)
-//   2. Concatenate entries from all chunks in order
-//   3. Set total to final entry count
-//   4. Return complete Bundle as JSON object
+//  1. Create new Bundle with original metadata (id, type, timestamp)
+//  2. Concatenate entries from all chunks in order
+//  3. Set total to final entry count
+//  4. Return complete Bundle as JSON object
 //
 // Parameters:
-//   metadata - Original Bundle metadata (from SplitResult)
-//   pseudonymizedChunks - Array of pseudonymized Bundle JSON objects (in order)
+//
+//	metadata - Original Bundle metadata (from SplitResult)
+//	pseudonymizedChunks - Array of pseudonymized Bundle JSON objects (in order)
 //
 // Returns:
-//   ReassembledBundle containing complete Bundle and statistics
-//   Error if chunks are invalid or reassembly fails
+//
+//	ReassembledBundle containing complete Bundle and statistics
+//	Error if chunks are invalid or reassembly fails
 //
 // WHY: Restores original Bundle structure after chunk-by-chunk pseudonymization
 // WHY: Maintains data integrity through deterministic concatenation
@@ -338,7 +346,7 @@ func ReassembleBundle(metadata models.BundleMetadata, pseudonymizedChunks []map[
 	return models.ReassembledBundle{
 		Bundle:         reassembledBundle,
 		EntryCount:     len(allEntries),
-		OriginalID:     pseudonymizedID, // Use pseudonymized ID from first chunk (not original metadata)
+		OriginalID:     pseudonymizedID,              // Use pseudonymized ID from first chunk (not original metadata)
 		WasReassembled: len(pseudonymizedChunks) > 1, // Only true if actually split
 	}, nil
 }
@@ -347,10 +355,12 @@ func ReassembleBundle(metadata models.BundleMetadata, pseudonymizedChunks []map[
 // Pure function: Takes SplitResult and returns statistics for logging/monitoring
 //
 // Parameters:
-//   result - SplitResult from SplitBundle operation
+//
+//	result - SplitResult from SplitBundle operation
 //
 // Returns:
-//   SplitStats containing metrics about the split operation
+//
+//	SplitStats containing metrics about the split operation
 //
 // WHY: Provides observability data for monitoring and debugging
 // WHY: Helps users understand splitting behavior and performance

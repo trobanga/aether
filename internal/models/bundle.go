@@ -17,55 +17,55 @@ type BundleMetadata struct {
 // BundleChunk represents one chunk of a split FHIR Bundle
 // Contains subset of original entries plus metadata for tracking
 type BundleChunk struct {
-	ChunkID      string                   // Unique identifier: "{originalID}-chunk-{index}"
-	Index        int                      // 0-based chunk index
-	TotalChunks  int                      // Total number of chunks in split operation
-	OriginalID   string                   // Original Bundle.id (for reassembly)
-	Metadata     BundleMetadata           // Original Bundle metadata
-	Entries      []map[string]any // Bundle entries (JSON objects)
-	EstimatedSize int                     // Estimated serialized size in bytes
+	ChunkID       string           // Unique identifier: "{originalID}-chunk-{index}"
+	Index         int              // 0-based chunk index
+	TotalChunks   int              // Total number of chunks in split operation
+	OriginalID    string           // Original Bundle.id (for reassembly)
+	Metadata      BundleMetadata   // Original Bundle metadata
+	Entries       []map[string]any // Bundle entries (JSON objects)
+	EstimatedSize int              // Estimated serialized size in bytes
 }
 
 // SplitResult encapsulates result of Bundle splitting operation (pure function output)
 // Immutable result structure following functional programming principles
 type SplitResult struct {
-	Metadata     BundleMetadata  // Original Bundle metadata
-	Chunks       []BundleChunk   // Ordered list of Bundle chunks
-	WasSplit     bool            // Whether splitting was necessary
-	OriginalSize int             // Original Bundle size in bytes
-	TotalChunks  int             // Number of chunks created (convenience field)
+	Metadata     BundleMetadata // Original Bundle metadata
+	Chunks       []BundleChunk  // Ordered list of Bundle chunks
+	WasSplit     bool           // Whether splitting was necessary
+	OriginalSize int            // Original Bundle size in bytes
+	TotalChunks  int            // Number of chunks created (convenience field)
 }
 
 // ReassembledBundle represents the final Bundle after pseudonymization and reassembly
 // Contains all pseudonymized entries in original order with restored metadata
 type ReassembledBundle struct {
 	Bundle         map[string]any // Complete FHIR Bundle (JSON object)
-	EntryCount     int                    // Total entries in reassembled Bundle
-	OriginalID     string                 // Original Bundle.id
-	WasReassembled bool                   // Whether Bundle was reassembled from chunks
+	EntryCount     int            // Total entries in reassembled Bundle
+	OriginalID     string         // Original Bundle.id
+	WasReassembled bool           // Whether Bundle was reassembled from chunks
 }
 
 // SplitStats captures metrics about Bundle splitting operation
 // Used for logging and monitoring purposes
 type SplitStats struct {
-	BundleID         string
-	OriginalSize     int
-	OriginalEntries  int
-	ChunksCreated    int
-	AverageChunkSize int
-	LargestChunkSize int
+	BundleID          string
+	OriginalSize      int
+	OriginalEntries   int
+	ChunksCreated     int
+	AverageChunkSize  int
+	LargestChunkSize  int
 	SmallestChunkSize int
-	SplitDuration    time.Duration
+	SplitDuration     time.Duration
 }
 
 // OversizedResourceError indicates a single resource exceeds threshold
 // Cannot be split without violating FHIR semantics
 type OversizedResourceError struct {
-	ResourceType  string // FHIR resource type (Patient, Observation, Condition, etc.)
-	ResourceID    string // Resource identifier
-	Size          int    // Actual size in bytes
-	Threshold     int    // Configured threshold in bytes
-	Guidance      string // User-facing guidance message
+	ResourceType string // FHIR resource type (Patient, Observation, Condition, etc.)
+	ResourceID   string // Resource identifier
+	Size         int    // Actual size in bytes
+	Threshold    int    // Configured threshold in bytes
+	Guidance     string // User-facing guidance message
 }
 
 // Error implements the error interface for OversizedResourceError

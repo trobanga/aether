@@ -30,7 +30,7 @@ func TestDetectOversizedResource(t *testing.T) {
 				"id":           "pat-001",
 				"name": []map[string]any{
 					{
-						"given": []string{"John", "James"},
+						"given":  []string{"John", "James"},
 						"family": "Doe",
 					},
 				},
@@ -44,8 +44,8 @@ func TestDetectOversizedResource(t *testing.T) {
 					},
 				},
 			},
-			threshold:     thresholdBytes,
-			expectError:   false,
+			threshold:       thresholdBytes,
+			expectError:     false,
 			expectedMinSize: 0,
 			expectedMaxSize: 1024 * 1024, // Should be much smaller than 1MB
 		},
@@ -57,8 +57,8 @@ func TestDetectOversizedResource(t *testing.T) {
 				obs["id"] = "obs-001"
 				return obs
 			}(),
-			threshold:     thresholdBytes,
-			expectError:   false,
+			threshold:       thresholdBytes,
+			expectError:     false,
 			expectedMinSize: 0,
 			expectedMaxSize: 1024 * 1024, // Much smaller than threshold
 		},
@@ -71,9 +71,9 @@ func TestDetectOversizedResource(t *testing.T) {
 				obs["id"] = "obs-oversized-001"
 				return obs
 			}(),
-			threshold:     thresholdBytes,
-			expectError:   true,
-			errorContains: "exceeds threshold",
+			threshold:       thresholdBytes,
+			expectError:     true,
+			errorContains:   "exceeds threshold",
 			expectedMinSize: 30 * 1024 * 1024,
 			expectedMaxSize: 40 * 1024 * 1024,
 		},
@@ -85,8 +85,8 @@ func TestDetectOversizedResource(t *testing.T) {
 				cond["id"] = "cond-001"
 				return cond
 			}(),
-			threshold:     thresholdBytes,
-			expectError:   false,
+			threshold:       thresholdBytes,
+			expectError:     false,
 			expectedMinSize: 0,
 			expectedMaxSize: 1024 * 1024,
 		},
@@ -100,8 +100,8 @@ func TestDetectOversizedResource(t *testing.T) {
 				bundle["id"] = "bundle-large-001"
 				return bundle
 			}(),
-			threshold:     thresholdBytes,
-			expectError:   false,
+			threshold:       thresholdBytes,
+			expectError:     false,
 			expectedMinSize: 0,
 			expectedMaxSize: 100 * 1024 * 1024, // Bundles are not checked
 		},

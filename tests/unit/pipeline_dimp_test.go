@@ -2,6 +2,7 @@ package unit
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -671,4 +672,170 @@ func TestExecuteDIMPStep_FileListingWithoutImportDir(t *testing.T) {
 	err := pipeline.ExecuteDIMPStep(job, tmpDir, logger)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no FHIR NDJSON files found")
+}
+
+// Additional tests for helper functions and edge cases
+
+func TestExecuteDIMPStep_VeryLargeBundle(t *testing.T) {
+	server := createMockDIMPServer()
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	job := createDIMPTestJob(server.URL)
+	// Set high threshold so large bundle is processed directly
+	job.Config.Services.DIMP.BundleSplitThresholdMB = 1000
+	logger := createDIMPTestLogger()
+
+	importDir := filepath.Join(tmpDir, "import")
+	require.NoError(t, os.MkdirAll(importDir, 0755))
+
+	// Create a large Bundle with many entries
+	inputFile := filepath.Join(importDir, "large_bundle.ndjson")
+	largeBundle := CreateTestBundle(500, 50) // 500 entries of ~50KB each = ~25MB
+	writeDIMPNDJSON(t, inputFile, []map[string]any{largeBundle})
+
+	err := pipeline.ExecuteDIMPStep(job, tmpDir, logger)
+	assert.NoError(t, err)
+
+	// Verify output file was created
+	outputFile := filepath.Join(tmpDir, "pseudonymized", "dimped_large_bundle.ndjson")
+	assert.FileExists(t, outputFile)
+}
+
+func TestExecuteDIMPStep_MixedResourceTypes(t *testing.T) {
+	server := createMockDIMPServer()
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	job := createDIMPTestJob(server.URL)
+	logger := createDIMPTestLogger()
+
+	importDir := filepath.Join(tmpDir, "import")
+	require.NoError(t, os.MkdirAll(importDir, 0755))
+
+	// Create NDJSON with mixed resource types
+	inputFile := filepath.Join(importDir, "mixed.ndjson")
+	resources := []map[string]any{
+		{"resourceType": "Patient", "id": "p1", "name": []any{map[string]any{"family": "Smith"}}},
+		{"resourceType": "Observation", "id": "obs1", "valueQuantity": map[string]any{"value": 100}},
+		{"resourceType": "Condition", "id": "cond1", "code": map[string]any{"text": "Test"}},
+		{"resourceType": "Procedure", "id": "proc1", "code": map[string]any{"text": "Procedure"}},
+	}
+	writeDIMPNDJSON(t, inputFile, resources)
+
+	err := pipeline.ExecuteDIMPStep(job, tmpDir, logger)
+	assert.NoError(t, err)
+
+	// Verify output file exists and has all resources
+	outputFile := filepath.Join(tmpDir, "pseudonymized", "dimped_mixed.ndjson")
+	assert.FileExists(t, outputFile)
+
+	outputResources := readDIMPNDJSON(t, outputFile)
+	assert.Len(t, outputResources, 4)
+}
+
+
+func TestExecuteDIMPStep_BundleWithError(t *testing.T) {
+	server := createMockDIMPServer()
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	job := createDIMPTestJob(server.URL)
+	job.Config.Services.DIMP.BundleSplitThresholdMB = 100 // Don't split
+	logger := createDIMPTestLogger()
+
+	importDir := filepath.Join(tmpDir, "import")
+	require.NoError(t, os.MkdirAll(importDir, 0755))
+
+	// Create a Bundle with entries (should succeed)
+	inputFile := filepath.Join(importDir, "bundles.ndjson")
+	bundle := map[string]any{
+		"resourceType": "Bundle",
+		"id":           "bundle1",
+		"type":         "collection",
+		"entry": []any{
+			map[string]any{
+				"resource": map[string]any{
+					"resourceType": "Patient",
+					"id":           "p1",
+					"name":         []any{map[string]any{"family": "Smith"}},
+				},
+			},
+			map[string]any{
+				"resource": map[string]any{
+					"resourceType": "Observation",
+					"id":           "obs1",
+				},
+			},
+		},
+	}
+	writeDIMPNDJSON(t, inputFile, []map[string]any{bundle})
+
+	err := pipeline.ExecuteDIMPStep(job, tmpDir, logger)
+	assert.NoError(t, err)
+
+	outputFile := filepath.Join(tmpDir, "pseudonymized", "dimped_bundles.ndjson")
+	assert.FileExists(t, outputFile)
+
+	// Verify the output is a valid Bundle
+	resources := readDIMPNDJSON(t, outputFile)
+	require.Len(t, resources, 1)
+	assert.Equal(t, "Bundle", resources[0]["resourceType"])
+}
+
+func TestExecuteDIMPStep_LargeNumberOfFiles(t *testing.T) {
+	server := createMockDIMPServer()
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	job := createDIMPTestJob(server.URL)
+	logger := createDIMPTestLogger()
+
+	importDir := filepath.Join(tmpDir, "import")
+	require.NoError(t, os.MkdirAll(importDir, 0755))
+
+	// Create many small files
+	fileCount := 20
+	for i := 0; i < fileCount; i++ {
+		inputFile := filepath.Join(importDir, fmt.Sprintf("file_%d.ndjson", i))
+		data := []map[string]any{
+			{"resourceType": "Patient", "id": fmt.Sprintf("p%d", i)},
+		}
+		writeDIMPNDJSON(t, inputFile, data)
+	}
+
+	err := pipeline.ExecuteDIMPStep(job, tmpDir, logger)
+	assert.NoError(t, err)
+
+	// Verify all files were processed
+	pseudonymizedDir := filepath.Join(tmpDir, "pseudonymized")
+	files, err := filepath.Glob(filepath.Join(pseudonymizedDir, "dimped_*.ndjson"))
+	require.NoError(t, err)
+	assert.Len(t, files, fileCount)
+}
+
+func TestExecuteDIMPStep_SpecialCharactersInFilenames(t *testing.T) {
+	server := createMockDIMPServer()
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	job := createDIMPTestJob(server.URL)
+	logger := createDIMPTestLogger()
+
+	importDir := filepath.Join(tmpDir, "import")
+	require.NoError(t, os.MkdirAll(importDir, 0755))
+
+	// Create file with special characters in name
+	inputFile := filepath.Join(importDir, "test_data-2025-01-01.ndjson")
+	patients := []map[string]any{
+		{"resourceType": "Patient", "id": "p1"},
+	}
+	writeDIMPNDJSON(t, inputFile, patients)
+
+	err := pipeline.ExecuteDIMPStep(job, tmpDir, logger)
+	assert.NoError(t, err)
+
+	// Verify output file exists
+	outputFile := filepath.Join(tmpDir, "pseudonymized", "dimped_test_data-2025-01-01.ndjson")
+	assert.FileExists(t, outputFile)
 }

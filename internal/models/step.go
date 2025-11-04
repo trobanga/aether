@@ -21,9 +21,9 @@ type PipelineStep struct {
 type StepName string
 
 const (
-	StepTorchImport       StepName = "torch"              // TORCH import via CRTDL or direct TORCH URL
-	StepLocalImport       StepName = "local_import"       // Import from local directory
-	StepHttpImport        StepName = "http_import"        // Import from HTTP URL
+	StepTorchImport       StepName = "torch"        // TORCH import via CRTDL or direct TORCH URL
+	StepLocalImport       StepName = "local_import" // Import from local directory
+	StepHttpImport        StepName = "http_import"  // Import from HTTP URL
 	StepDIMP              StepName = "dimp"
 	StepValidation        StepName = "validation"
 	StepCSVConversion     StepName = "csv_conversion"

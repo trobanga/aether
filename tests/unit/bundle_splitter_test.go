@@ -13,11 +13,11 @@ import (
 // TestCalculateBundleSize verifies that CalculateJSONSize returns accurate byte counts
 func TestCalculateBundleSize(t *testing.T) {
 	testCases := []struct {
-		name           string
-		entryCount     int
-		entrySizeKB    int
-		expectedMinMB  float64 // Approximate lower bound
-		expectedMaxMB  float64 // Approximate upper bound
+		name          string
+		entryCount    int
+		entrySizeKB   int
+		expectedMinMB float64 // Approximate lower bound
+		expectedMaxMB float64 // Approximate upper bound
 	}{
 		{
 			name:          "Small Bundle 1KB",
@@ -64,40 +64,40 @@ func TestCalculateBundleSize(t *testing.T) {
 // TestShouldSplit verifies the threshold comparison logic
 func TestShouldSplit(t *testing.T) {
 	testCases := []struct {
-		name          string
-		bundleSizeMB  float64
-		thresholdMB   int
-		shouldSplit   bool
+		name         string
+		bundleSizeMB float64
+		thresholdMB  int
+		shouldSplit  bool
 	}{
 		{
-			name:        "Bundle below threshold",
+			name:         "Bundle below threshold",
 			bundleSizeMB: 9.0,
-			thresholdMB: 10,
-			shouldSplit: false,
+			thresholdMB:  10,
+			shouldSplit:  false,
 		},
 		{
-			name:        "Bundle exactly at threshold",
+			name:         "Bundle exactly at threshold",
 			bundleSizeMB: 10.0,
-			thresholdMB: 10,
-			shouldSplit: false, // At threshold, don't split
+			thresholdMB:  10,
+			shouldSplit:  false, // At threshold, don't split
 		},
 		{
-			name:        "Bundle above threshold by 1MB",
+			name:         "Bundle above threshold by 1MB",
 			bundleSizeMB: 11.0,
-			thresholdMB: 10,
-			shouldSplit: true,
+			thresholdMB:  10,
+			shouldSplit:  true,
 		},
 		{
-			name:        "Bundle far above threshold",
+			name:         "Bundle far above threshold",
 			bundleSizeMB: 50.0,
-			thresholdMB: 10,
-			shouldSplit: true,
+			thresholdMB:  10,
+			shouldSplit:  true,
 		},
 		{
-			name:        "Small Bundle with high threshold",
+			name:         "Small Bundle with high threshold",
 			bundleSizeMB: 5.0,
-			thresholdMB: 20,
-			shouldSplit: false,
+			thresholdMB:  20,
+			shouldSplit:  false,
 		},
 	}
 

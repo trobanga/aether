@@ -277,8 +277,8 @@ func DetectOversizedResource(resource map[string]any, thresholdBytes int) *model
 		}
 
 		guidance := fmt.Sprintf(
-			"This resource cannot be split without violating FHIR semantics. "+
-				"Solutions: (1) Review data quality - resource may contain unnecessary data; "+
+			"This resource cannot be split without violating FHIR semantics. " +
+				"Solutions: (1) Review data quality - resource may contain unnecessary data; " +
 				"(2) Increase DIMP server payload limit; (3) Increase bundle_split_threshold_mb configuration.",
 		)
 

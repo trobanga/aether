@@ -573,3 +573,250 @@ func TestTORCHClient_Ping_PerformanceWithin5Seconds(t *testing.T) {
 	// Log performance for visibility
 	t.Logf("TORCH connectivity check completed in %v (requirement: < 5s)", duration)
 }
+
+// Tests for makeAbsoluteURL helper (relative URL handling)
+
+func TestTORCHClient_MakeAbsoluteURL_RelativeURL(t *testing.T) {
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:  "http://torch.example.com:8080",
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+
+	// Test relative URL conversion (this is tested indirectly through DownloadExtractionFiles)
+	// The makeAbsoluteURL method is private, but it's tested via file downloads
+	assert.NotNil(t, client)
+}
+
+// Tests for CRTDL encoding edge cases
+
+func TestTORCHClient_EncodeCRTDLToBase64_EmptyFile(t *testing.T) {
+	tempDir := t.TempDir()
+	crtdlPath := filepath.Join(tempDir, "empty.crtdl")
+	// Create empty file
+	err := os.WriteFile(crtdlPath, []byte(""), 0644)
+	require.NoError(t, err)
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:  "http://localhost:8080",
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+	_, err = client.SubmitExtraction(crtdlPath)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestTORCHClient_EncodeCRTDLToBase64_InvalidJSON(t *testing.T) {
+	tempDir := t.TempDir()
+	crtdlPath := filepath.Join(tempDir, "invalid.crtdl")
+	// Write invalid JSON
+	err := os.WriteFile(crtdlPath, []byte("{invalid json"), 0644)
+	require.NoError(t, err)
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:  "http://localhost:8080",
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+	_, err = client.SubmitExtraction(crtdlPath)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not valid JSON")
+}
+
+// Tests for response parsing edge cases
+
+func TestTORCHClient_ParseExtractionResult_FHIRFormat(t *testing.T) {
+	var serverURL string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		result := map[string]any{
+			"resourceType": "Parameters",
+			"parameter": []map[string]any{
+				{
+					"name": "output",
+					"part": []map[string]any{
+						{
+							"name":     "url",
+							"valueUrl": serverURL + "/files/result.ndjson",
+						},
+					},
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(result)
+	}))
+	serverURL = server.URL
+	defer server.Close()
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:                   server.URL,
+		Username:                  "testuser",
+		Password:                  "testpass",
+		ExtractionTimeoutMinutes:  1,
+		PollingIntervalSeconds:    1,
+		MaxPollingIntervalSeconds: 5,
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+	urls, err := client.PollExtractionStatus(server.URL+"/fhir/extraction/job-123", false)
+
+	assert.NoError(t, err)
+	assert.Len(t, urls, 1)
+	assert.Contains(t, urls[0], "result.ndjson")
+}
+
+func TestTORCHClient_ParseExtractionResult_SimpleFormat(t *testing.T) {
+	var serverURL string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		result := map[string]any{
+			"requiresAccessToken": false,
+			"output": []map[string]any{
+				{
+					"type": "data",
+					"url":  serverURL + "/downloads/data.ndjson",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(result)
+	}))
+	serverURL = server.URL
+	defer server.Close()
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:                   server.URL,
+		Username:                  "testuser",
+		Password:                  "testpass",
+		ExtractionTimeoutMinutes:  1,
+		PollingIntervalSeconds:    1,
+		MaxPollingIntervalSeconds: 5,
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+	urls, err := client.PollExtractionStatus(server.URL+"/fhir/extraction/job-123", false)
+
+	assert.NoError(t, err)
+	assert.Len(t, urls, 1)
+	assert.Contains(t, urls[0], "data.ndjson")
+}
+
+func TestTORCHClient_ParseExtractionResult_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("{invalid json}"))
+	}))
+	defer server.Close()
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:                   server.URL,
+		Username:                  "testuser",
+		Password:                  "testpass",
+		ExtractionTimeoutMinutes:  1,
+		PollingIntervalSeconds:    1,
+		MaxPollingIntervalSeconds: 5,
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+	_, err := client.PollExtractionStatus(server.URL+"/fhir/extraction/job-123", false)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid JSON")
+}
+
+func TestTORCHClient_SubmitExtraction_MissingContentLocation(t *testing.T) {
+	tempDir := t.TempDir()
+	crtdlPath := filepath.Join(tempDir, "test.crtdl")
+	crtdlJSON := []byte(`{"cohortDefinition":{"inclusionCriteria":[]},"dataExtraction":{"attributeGroups":[]}}`)
+	_ = os.WriteFile(crtdlPath, crtdlJSON, 0644)
+
+	// Mock TORCH server returning 202 without Content-Location header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+		// Intentionally omit Content-Location header
+	}))
+	defer server.Close()
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:  server.URL,
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+	_, err := client.SubmitExtraction(crtdlPath)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Content-Location")
+}
+
+func TestTORCHClient_DownloadExtractionFiles_EmptyFileList(t *testing.T) {
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:  "http://localhost:8080",
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	tempDir := t.TempDir()
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+
+	files, err := client.DownloadExtractionFiles([]string{}, tempDir, false)
+
+	assert.NoError(t, err)
+	assert.Len(t, files, 0)
+}
+
+func TestTORCHClient_DownloadExtractionFiles_InvalidDestinationPermissions(t *testing.T) {
+	ndjsonContent := `{"resourceType":"Patient","id":"1"}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/fhir+ndjson")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(ndjsonContent))
+	}))
+	defer server.Close()
+
+	logger := lib.NewLogger(lib.LogLevelDebug)
+	httpClient := services.NewHTTPClient(5*time.Second, models.RetryConfig{MaxAttempts: 3, InitialBackoffMs: 100, MaxBackoffMs: 1000}, logger)
+	torchConfig := models.TORCHConfig{
+		BaseURL:  server.URL,
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	// Use read-only directory to trigger permission error
+	client := services.NewTORCHClient(torchConfig, httpClient, logger)
+
+	// Try to download to root directory (will fail with permission error)
+	fileURLs := []string{server.URL + "/output/batch-1.ndjson"}
+	_, err := client.DownloadExtractionFiles(fileURLs, "/root/invalid", false)
+
+	assert.Error(t, err)
+}

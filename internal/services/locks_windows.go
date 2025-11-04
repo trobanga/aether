@@ -13,15 +13,15 @@ import (
 )
 
 var (
-	kernel32                = syscall.NewLazyDLL("kernel32.dll")
-	procLockFileEx          = kernel32.NewProc("LockFileEx")
-	procUnlockFileEx        = kernel32.NewProc("UnlockFileEx")
+	kernel32         = syscall.NewLazyDLL("kernel32.dll")
+	procLockFileEx   = kernel32.NewProc("LockFileEx")
+	procUnlockFileEx = kernel32.NewProc("UnlockFileEx")
 )
 
 const (
 	LOCKFILE_FAIL_IMMEDIATELY = 0x00000001
-	LOCKFILE_EXCLUSIVE_LOCK    = 0x00000002
-	ERROR_LOCK_VIOLATION       = syscall.Errno(33) // File is locked by another process
+	LOCKFILE_EXCLUSIVE_LOCK   = 0x00000002
+	ERROR_LOCK_VIOLATION      = syscall.Errno(33) // File is locked by another process
 )
 
 // AcquireJobLock attempts to acquire an exclusive lock for a job (Windows implementation)

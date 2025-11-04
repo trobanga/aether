@@ -818,10 +818,10 @@ func TestGetNextStep(t *testing.T) {
 // TestHasServiceURL verifies service URL presence checks
 func TestHasServiceURL(t *testing.T) {
 	testCases := []struct {
-		name     string
-		config   models.ServiceConfig
-		step     models.StepName
-		hasURL   bool
+		name   string
+		config models.ServiceConfig
+		step   models.StepName
+		hasURL bool
 	}{
 		{
 			name: "DIMP with URL",

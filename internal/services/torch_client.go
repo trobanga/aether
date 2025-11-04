@@ -193,12 +193,8 @@ func (c *TORCHClient) SubmitExtraction(crtdlPath string) (string, error) {
 func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bool) ([]string, error) {
 	c.logger.Info("Polling TORCH extraction status", "url", extractionURL)
 
-	timeout := time.Duration(c.config.ExtractionTimeoutMinutes) * time.Minute
-	startTime := time.Now()
-	pollInterval := time.Duration(c.config.PollingIntervalSeconds) * time.Second
-	maxPollInterval := time.Duration(c.config.MaxPollingIntervalSeconds) * time.Second
-
-	pollCount := 0
+	// Setup polling configuration
+	pollConfig := NewPollConfig(c.config.ExtractionTimeoutMinutes, c.config.PollingIntervalSeconds, c.config.MaxPollingIntervalSeconds)
 
 	// Start spinner for polling (duration unknown)
 	var spinner *ui.Spinner
@@ -214,30 +210,27 @@ func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bo
 
 	for {
 		// Check timeout
-		if time.Since(startTime) > timeout {
+		if pollConfig.CheckTimeout() {
 			c.logger.Error("TORCH extraction timeout",
-				"duration", time.Since(startTime),
-				"timeout", timeout,
-				"polls", pollCount)
+				"duration", pollConfig.GetElapsedTime(),
+				"timeout", pollConfig.Timeout,
+				"polls", pollConfig.PollCount)
 			return nil, ErrExtractionTimeout
 		}
 
-		pollCount++
-		c.logger.Debug("Polling TORCH extraction", "attempt", pollCount, "interval", pollInterval)
+		pollConfig.IncrementPollCount()
+		c.logger.Debug("Polling TORCH extraction", "attempt", pollConfig.PollCount, "interval", pollConfig.PollInterval)
 
-		// Create request with authentication
-		req, err := http.NewRequest("GET", extractionURL, nil)
+		// Create poll request with authentication
+		req, err := createPollRequest(extractionURL, c)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create poll request: %w", err)
 		}
 
-		req.Header.Set("Authorization", c.buildBasicAuthHeader())
-		req.Header.Set("Accept", "application/json")
-
 		// Send request
 		resp, err := c.httpClient.client.Do(req)
 		if err != nil {
-			c.logger.Error("TORCH polling failed", "error", err, "attempt", pollCount)
+			c.logger.Error("TORCH polling failed", "error", err, "attempt", pollConfig.PollCount)
 			return nil, &TORCHError{
 				Operation:  "poll",
 				StatusCode: 0,
@@ -247,47 +240,19 @@ func (c *TORCHClient) PollExtractionStatus(extractionURL string, showProgress bo
 		}
 
 		// Handle response
-		if resp.StatusCode == http.StatusAccepted {
-			// Still in progress
-			_ = resp.Body.Close()
-			c.logger.Debug("TORCH extraction in progress", "attempt", pollCount)
-
-			// Wait with exponential backoff
-			time.Sleep(pollInterval)
-
-			// Double interval for next poll (exponential backoff)
-			pollInterval = pollInterval * 2
-			if pollInterval > maxPollInterval {
-				pollInterval = maxPollInterval
-			}
-
-			continue
+		complete, fileURLs, err := handlePollResponse(resp, c)
+		if err != nil {
+			return nil, err
 		}
 
-		// Read response body
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-
-		if resp.StatusCode == http.StatusOK {
-			// Extraction complete - parse result
-			c.logger.Info("TORCH extraction completed", "polls", pollCount)
-			c.logger.Debug("TORCH extraction response body", "body", string(bodyBytes))
-			return c.parseExtractionResult(bodyBytes)
+		if complete {
+			c.logger.Info("TORCH extraction completed", "polls", pollConfig.PollCount)
+			return fileURLs, nil
 		}
 
-		// Error response
-		errorType := lib.ClassifyHTTPError(resp.StatusCode)
-		c.logger.Error("TORCH extraction failed",
-			"status_code", resp.StatusCode,
-			"status", resp.Status,
-			"error_body", string(bodyBytes))
-
-		return nil, &TORCHError{
-			Operation:  "poll",
-			StatusCode: resp.StatusCode,
-			Message:    string(bodyBytes),
-			ErrorType:  errorType,
-		}
+		// Still in progress - wait with exponential backoff
+		time.Sleep(pollConfig.PollInterval)
+		pollConfig.UpdateInterval()
 	}
 }
 
@@ -616,10 +581,10 @@ func (c *TORCHClient) makeAbsoluteURL(rawURL string) string {
 	// - localhost/127.0.0.1: loopback addresses used internally
 	hostname := torchURL.Hostname()
 	internalHosts := map[string]bool{
-		"torch":        true,
-		"torch-proxy":  true,
-		"localhost":    true,
-		"127.0.0.1":    true,
+		"torch":       true,
+		"torch-proxy": true,
+		"localhost":   true,
+		"127.0.0.1":   true,
 	}
 
 	if internalHosts[hostname] {
@@ -633,7 +598,7 @@ func (c *TORCHClient) makeAbsoluteURL(rawURL string) string {
 		// Create new URL with baseURL's scheme and host, but TORCH URL's path and query
 		rewrittenURL := &url.URL{
 			Scheme:   baseURLParsed.Scheme,
-			Host:     baseURLParsed.Host,           // includes port if present
+			Host:     baseURLParsed.Host, // includes port if present
 			Path:     torchURL.Path,
 			RawQuery: torchURL.RawQuery,
 		}
