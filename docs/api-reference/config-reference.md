@@ -18,7 +18,6 @@ services:
     url: string                 # Parquet conversion service URL (future)
   torch:
     base_url: string            # TORCH FHIR server URL
-    file_server_url: string     # TORCH file server URL (optional)
     username: string            # TORCH username
     password: string            # TORCH password
     extraction_timeout_minutes: integer # Timeout for extractions (default: 30)

@@ -27,22 +27,14 @@ else
     export DIMP_URL="http://localhost:32861/fhir"
 fi
 
-# Get TORCH server port
-if TORCH_PORT=$(docker compose port torch 8080 2>/dev/null | cut -d: -f2); then
-    export TORCH_URL="http://localhost:${TORCH_PORT}"
-    echo "TORCH service available at: ${TORCH_URL}"
+# Get TORCH reverse proxy (nginx) port
+# The nginx proxy routes both API requests (/fhir/*) and file downloads
+if TORCH_PROXY_PORT=$(docker compose port torch-proxy 80 2>/dev/null | cut -d: -f2); then
+    export TORCH_URL="http://localhost:${TORCH_PROXY_PORT}"
+    echo "TORCH service available at: ${TORCH_URL} (via nginx reverse proxy)"
 else
-    echo "Warning: TORCH service not found, using default URL"
-    export TORCH_URL="http://localhost:8081"
-fi
-
-# Get TORCH file server port
-if TORCH_FILE_SERVER_PORT=$(docker compose port torch-file-server 80 2>/dev/null | cut -d: -f2); then
-    export TORCH_FILE_SERVER_URL="http://localhost:${TORCH_FILE_SERVER_PORT}"
-    echo "TORCH file server available at: ${TORCH_FILE_SERVER_URL}"
-else
-    echo "Warning: TORCH file server not found, using default URL"
-    export TORCH_FILE_SERVER_URL="http://localhost:8082"
+    echo "Warning: TORCH reverse proxy not found, using default URL"
+    export TORCH_URL="http://localhost:8080"
 fi
 
 # Get VFPS port
