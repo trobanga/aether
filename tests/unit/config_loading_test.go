@@ -447,8 +447,6 @@ jobs_dir: "` + jobsDir + `"
 // Unit tests for TORCHConfig validation
 
 func TestTORCHConfig_ValidateSuccess(t *testing.T) {
-	t.Skip("TODO: TORCH config loading tests need debugging - config fields not populating from YAML")
-
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
@@ -491,13 +489,12 @@ jobs_dir: "` + jobsDir + `"
 	assert.Equal(t, 5, config.Services.TORCH.PollingIntervalSeconds)
 	assert.Equal(t, 30, config.Services.TORCH.MaxPollingIntervalSeconds)
 
-	// Test validation - this will fail until Validate() is implemented
-	// err = config.Services.TORCH.Validate()
-	// assert.NoError(t, err, "Valid TORCH config should pass validation")
+	// Test validation passes with valid config
+	err = config.Services.TORCH.Validate()
+	assert.NoError(t, err, "Valid TORCH config should pass validation")
 }
 
 func TestTORCHConfig_ValidateMissingBaseURL(t *testing.T) {
-	t.Skip("TODO: TORCH config validation not yet implemented")
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
@@ -524,20 +521,13 @@ jobs_dir: "` + jobsDir + `"
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	config, err := services.LoadConfig(configFile)
-	require.NoError(t, err)
-	_ = config // Will be used when validation is implemented
-
-	// Test validation - this will fail until Validate() is implemented
-	// err = config.Services.TORCH.Validate()
-	// assert.Error(t, err, "Missing base_url should fail validation")
-	// assert.Contains(t, err.Error(), "base_url")
-
-	t.Skip("Skipping until TORCHConfig.Validate() is implemented")
+	// LoadConfig validates config, so missing base_url should cause error
+	_, err = services.LoadConfig(configFile)
+	assert.Error(t, err, "Missing base_url should fail validation")
+	assert.Contains(t, err.Error(), "base_url")
 }
 
 func TestTORCHConfig_ValidateInvalidURL(t *testing.T) {
-	t.Skip("TODO: TORCH config validation not yet implemented")
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
@@ -564,20 +554,13 @@ jobs_dir: "` + jobsDir + `"
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	config, err := services.LoadConfig(configFile)
-	require.NoError(t, err)
-	_ = config // Will be used when validation is implemented
-
-	// Test validation - this will fail until Validate() is implemented
-	// err = config.Services.TORCH.Validate()
-	// assert.Error(t, err, "Invalid URL should fail validation")
-	// assert.Contains(t, err.Error(), "invalid")
-
-	t.Skip("Skipping until TORCHConfig.Validate() is implemented")
+	// LoadConfig validates config, invalid URL (missing scheme) should cause error
+	_, err = services.LoadConfig(configFile)
+	assert.Error(t, err, "Invalid URL should fail validation")
+	assert.Contains(t, err.Error(), "http")
 }
 
 func TestTORCHConfig_ValidateMissingCredentials(t *testing.T) {
-	t.Skip("TODO: TORCH config validation not yet implemented")
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
@@ -604,20 +587,15 @@ jobs_dir: "` + jobsDir + `"
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	require.NoError(t, err)
 
+	// Credentials are optional - should load successfully even without them
 	config, err := services.LoadConfig(configFile)
-	require.NoError(t, err)
-	_ = config // Will be used when validation is implemented
-
-	// Test validation - this will fail until Validate() is implemented
-	// err = config.Services.TORCH.Validate()
-	// assert.Error(t, err, "Missing username should fail validation")
-	// assert.Contains(t, err.Error(), "username")
-
-	t.Skip("Skipping until TORCHConfig.Validate() is implemented")
+	require.NoError(t, err, "Missing credentials should be allowed for TORCH")
+	assert.Equal(t, "http://localhost:8080", config.Services.TORCH.BaseURL)
+	assert.Equal(t, "", config.Services.TORCH.Username)
+	assert.Equal(t, "", config.Services.TORCH.Password)
 }
 
 func TestTORCHConfig_ValidateInvalidTimeout(t *testing.T) {
-	t.Skip("TODO: TORCH config validation not yet implemented")
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
@@ -629,7 +607,7 @@ services:
     base_url: "http://localhost:8080"
     username: "testuser"
     password: "testpass"
-    extraction_timeout_minutes: 0
+    extraction_timeout_minutes: -1
 
 pipeline:
   enabled_steps:
@@ -645,20 +623,13 @@ jobs_dir: "` + jobsDir + `"
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	config, err := services.LoadConfig(configFile)
-	require.NoError(t, err)
-	_ = config // Will be used when validation is implemented
-
-	// Test validation - this will fail until Validate() is implemented
-	// err = config.Services.TORCH.Validate()
-	// assert.Error(t, err, "Zero timeout should fail validation")
-	// assert.Contains(t, err.Error(), "timeout")
-
-	t.Skip("Skipping until TORCHConfig.Validate() is implemented")
+	// LoadConfig validates config, zero timeout should cause error
+	_, err = services.LoadConfig(configFile)
+	assert.Error(t, err, "Zero timeout should fail validation")
+	assert.Contains(t, err.Error(), "timeout")
 }
 
 func TestTORCHConfig_ValidateInvalidPollingInterval(t *testing.T) {
-	t.Skip("TODO: TORCH config validation not yet implemented")
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
@@ -670,7 +641,7 @@ services:
     base_url: "http://localhost:8080"
     username: "testuser"
     password: "testpass"
-    polling_interval_seconds: 0
+    polling_interval_seconds: -1
 
 pipeline:
   enabled_steps:
@@ -686,20 +657,13 @@ jobs_dir: "` + jobsDir + `"
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	config, err := services.LoadConfig(configFile)
-	require.NoError(t, err)
-	_ = config // Will be used when validation is implemented
-
-	// Test validation - this will fail until Validate() is implemented
-	// err = config.Services.TORCH.Validate()
-	// assert.Error(t, err, "Invalid polling interval should fail validation")
-	// assert.Contains(t, err.Error(), "polling_interval")
-
-	t.Skip("Skipping until TORCHConfig.Validate() is implemented")
+	// LoadConfig validates config, invalid polling interval should cause error
+	_, err = services.LoadConfig(configFile)
+	assert.Error(t, err, "Invalid polling interval should fail validation")
+	assert.Contains(t, err.Error(), "polling_interval")
 }
 
 func TestTORCHConfig_ValidateMaxPollingLessThanMin(t *testing.T) {
-	t.Skip("TODO: TORCH config validation not yet implemented")
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	jobsDir := filepath.Join(tmpDir, "jobs")
@@ -728,32 +692,130 @@ jobs_dir: "` + jobsDir + `"
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	config, err := services.LoadConfig(configFile)
-	require.NoError(t, err)
-	_ = config // Will be used when validation is implemented
-
-	// Test validation - this will fail until Validate() is implemented
-	// err = config.Services.TORCH.Validate()
-	// assert.Error(t, err, "Max polling less than min should fail validation")
-	// assert.Contains(t, err.Error(), "max_polling_interval")
-
-	t.Skip("Skipping until TORCHConfig.Validate() is implemented")
+	// LoadConfig validates config, max < min should cause error
+	_, err = services.LoadConfig(configFile)
+	assert.Error(t, err, "Max polling less than min should fail validation")
+	assert.Contains(t, err.Error(), "max_polling_interval")
 }
 
 func TestTORCHConfig_WithDefaults(t *testing.T) {
 	// Test that TORCH config uses sensible defaults
 	config := models.DefaultConfig()
-	_ = config // Will be used when validation is implemented
 
 	// Verify TORCH section exists with defaults
-	// assert.Equal(t, "", config.Services.TORCH.BaseURL, "BaseURL should default to empty")
-	// assert.Equal(t, "", config.Services.TORCH.Username, "Username should default to empty")
-	// assert.Equal(t, "", config.Services.TORCH.Password, "Password should default to empty")
-	// assert.Equal(t, 30, config.Services.TORCH.ExtractionTimeoutMinutes, "Should default to 30 minutes")
-	// assert.Equal(t, 5, config.Services.TORCH.PollingIntervalSeconds, "Should default to 5 seconds")
-	// assert.Equal(t, 30, config.Services.TORCH.MaxPollingIntervalSeconds, "Should default to 30 seconds")
+	assert.Equal(t, "", config.Services.TORCH.BaseURL, "BaseURL should default to empty")
+	assert.Equal(t, "", config.Services.TORCH.Username, "Username should default to empty")
+	assert.Equal(t, "", config.Services.TORCH.Password, "Password should default to empty")
+	assert.Equal(t, 30, config.Services.TORCH.ExtractionTimeoutMinutes, "Should default to 30 minutes")
+	assert.Equal(t, 5, config.Services.TORCH.PollingIntervalSeconds, "Should default to 5 seconds")
+	assert.Equal(t, 30, config.Services.TORCH.MaxPollingIntervalSeconds, "Should default to 30 seconds")
+}
 
-	t.Skip("Skipping until TORCHConfig is added to DefaultConfig()")
+func TestTORCHConfig_ValidateMalformedURL(t *testing.T) {
+	// Test URL that causes url.Parse to fail (contains invalid characters)
+	config := models.TORCHConfig{
+		BaseURL:                   "http://[invalid",
+		Username:                  "user",
+		Password:                  "pass",
+		ExtractionTimeoutMinutes:  30,
+		PollingIntervalSeconds:    5,
+		MaxPollingIntervalSeconds: 30,
+	}
+
+	err := config.Validate()
+	assert.Error(t, err, "Malformed URL should fail validation")
+	assert.Contains(t, err.Error(), "invalid TORCH base_url")
+}
+
+func TestTORCHConfig_ValidatePollingIntervalTooHigh(t *testing.T) {
+	// Test polling interval above maximum (>60)
+	config := models.TORCHConfig{
+		BaseURL:                   "http://localhost:8080",
+		Username:                  "user",
+		Password:                  "pass",
+		ExtractionTimeoutMinutes:  30,
+		PollingIntervalSeconds:    61, // Invalid: > 60
+		MaxPollingIntervalSeconds: 61,
+	}
+
+	err := config.Validate()
+	assert.Error(t, err, "Polling interval > 60 should fail validation")
+	assert.Contains(t, err.Error(), "polling_interval_seconds must be 1-60")
+}
+
+func TestTORCHConfig_ValidateEdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  models.TORCHConfig
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "Polling interval exactly 1 - valid",
+			config: models.TORCHConfig{
+				BaseURL:                   "http://localhost:8080",
+				ExtractionTimeoutMinutes:  1,
+				PollingIntervalSeconds:    1,
+				MaxPollingIntervalSeconds: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Polling interval exactly 60 - valid",
+			config: models.TORCHConfig{
+				BaseURL:                   "http://localhost:8080",
+				ExtractionTimeoutMinutes:  1,
+				PollingIntervalSeconds:    60,
+				MaxPollingIntervalSeconds: 60,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Max polling equals min polling - valid",
+			config: models.TORCHConfig{
+				BaseURL:                   "http://localhost:8080",
+				ExtractionTimeoutMinutes:  1,
+				PollingIntervalSeconds:    10,
+				MaxPollingIntervalSeconds: 10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "HTTPS URL - valid",
+			config: models.TORCHConfig{
+				BaseURL:                   "https://torch.example.com",
+				ExtractionTimeoutMinutes:  30,
+				PollingIntervalSeconds:    5,
+				MaxPollingIntervalSeconds: 30,
+			},
+			wantErr: false,
+		},
+		{
+			name: "FTP URL - invalid scheme",
+			config: models.TORCHConfig{
+				BaseURL:                   "ftp://localhost",
+				ExtractionTimeoutMinutes:  30,
+				PollingIntervalSeconds:    5,
+				MaxPollingIntervalSeconds: 30,
+			},
+			wantErr: true,
+			errMsg:  "must use http or https scheme",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 // TestGetServiceURL verifies service URL retrieval for different steps

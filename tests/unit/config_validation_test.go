@@ -189,6 +189,16 @@ func TestProjectConfig_Validate(t *testing.T) {
 		{
 			name: "First step is torch_import - valid",
 			config: models.ProjectConfig{
+				Services: models.ServiceConfig{
+					TORCH: models.TORCHConfig{
+						BaseURL:                   "http://localhost:8080",
+						Username:                  "testuser",
+						Password:                  "testpass",
+						ExtractionTimeoutMinutes:  30,
+						PollingIntervalSeconds:    5,
+						MaxPollingIntervalSeconds: 30,
+					},
+				},
 				Pipeline: models.PipelineConfig{
 					EnabledSteps: []models.StepName{models.StepTorchImport},
 				},
