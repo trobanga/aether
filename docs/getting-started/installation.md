@@ -4,17 +4,79 @@ This guide walks you through installing Aether on your system.
 
 ## Prerequisites
 
-Before installing Aether, ensure you have:
-
-- **Go 1.25 or later** (required)
-- **make** (for building from source)
-- **git** (for cloning the repository)
-
 Optional tools:
 - TORCH server access (for FHIR data extraction)
 - DIMP service (for pseudonymization features)
 
+## Installation from Release (Recommended)
+
+The easiest way to install Aether is to download a precompiled release binary for your platform.
+
+### 1. Download the Release
+
+Visit the [Aether releases page](https://github.com/trobanga/aether/releases) and download the appropriate binary for your platform:
+
+- **macOS (Intel)**: `aether-0.1.0-darwin-amd64.tar.gz`
+- **macOS (ARM/Apple Silicon)**: `aether-0.1.0-darwin-arm64.tar.gz`
+- **Linux (x86-64)**: `aether-0.1.0-linux-amd64.tar.gz`
+- **Windows (Intel)**: `aether-0.1.0-windows-amd64.zip`
+- **Windows (ARM)**: `aether-0.1.0-windows-arm64.zip`
+
+### 2. Extract the Archive
+
+**macOS and Linux:**
+
+```bash
+tar -xzf aether-0.1.0-linux-amd64.tar.gz
+# Or for macOS: tar -xzf aether-0.1.0-darwin-amd64.tar.gz
+```
+
+**Windows:**
+
+```powershell
+Expand-Archive aether-0.1.0-windows-amd64.zip -DestinationPath .
+```
+
+This creates an `aether` binary in your current directory.
+
+### 3. Install to System PATH
+
+**Option A: System-wide installation (requires sudo, macOS/Linux)**
+
+```bash
+sudo mv aether /usr/local/bin/
+```
+
+**Option B: User-local installation (no sudo required)**
+
+**macOS and Linux:**
+
+```bash
+mkdir -p ~/.local/bin
+mv aether ~/.local/bin/
+
+# Ensure ~/.local/bin is in your PATH:
+echo $PATH | grep '.local/bin'
+
+# If not present, add to your shell configuration (~/.bashrc, ~/.zshrc, etc.):
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+**Windows:**
+
+Move `aether.exe` to a directory in your PATH, or create a folder and add it to your PATH environment variable.
+
 ## Installation from Source
+
+For developers who want to build Aether from source or contribute to the project.
+
+### Prerequisites
+
+Ensure you have:
+
+- **Go 1.25 or later**
+- **make** (for building from source)
+- **git** (for cloning the repository)
 
 ### 1. Clone the Repository
 
