@@ -212,10 +212,10 @@ func TestIsCRTDLFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	testCases := []struct {
-		name       string
-		content    string
-		isCRTDL    bool
-		setupFile  func() string
+		name      string
+		content   string
+		isCRTDL   bool
+		setupFile func() string
 	}{
 		{
 			name: "Valid CRTDL",
@@ -306,7 +306,7 @@ func TestIsCRTDLFileWithHint(t *testing.T) {
 				"cohortDefinition": {"inclusionCriteria": [[]]},
 				"dataExtraction": {"attributeGroups": []}
 			}`,
-			expectValid: true,
+			expectValid:  true,
 			hintContains: "",
 		},
 		{

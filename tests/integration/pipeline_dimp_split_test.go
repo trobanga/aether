@@ -363,7 +363,7 @@ func createLargeTestBundle(t *testing.T, entryCount int, entrySizeKB int) map[st
 		}
 
 		entries[i] = map[string]any{
-			"fullUrl": fmt.Sprintf("urn:uuid:entry-%06d", i),
+			"fullUrl":  fmt.Sprintf("urn:uuid:entry-%06d", i),
 			"resource": resource,
 		}
 	}
@@ -727,4 +727,3 @@ func createSmallTestBundle(t *testing.T, entryCount int, entrySizeKB int) map[st
 
 	return bundle
 }
-
