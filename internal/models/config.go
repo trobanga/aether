@@ -83,7 +83,7 @@ func DefaultConfig() ProjectConfig {
 			},
 		},
 		Pipeline: PipelineConfig{
-			EnabledSteps: []StepName{StepTorchImport, StepLocalImport, StepHttpImport},
+			EnabledSteps: []StepName{StepLocalImport, StepHttpImport},
 		},
 		Retry: RetryConfig{
 			MaxAttempts:      5,
@@ -100,17 +100,17 @@ func (c *TORCHConfig) Validate() error {
 		return fmt.Errorf("TORCH base_url is required")
 	}
 
-	if _, err := url.Parse(c.BaseURL); err != nil {
+	parsedURL, err := url.Parse(c.BaseURL)
+	if err != nil {
 		return fmt.Errorf("invalid TORCH base_url: %w", err)
 	}
 
-	if c.Username == "" {
-		return fmt.Errorf("TORCH username is required")
+	// Require http or https scheme for TORCH service
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("invalid TORCH base_url: must use http or https scheme, got '%s'", parsedURL.Scheme)
 	}
 
-	if c.Password == "" {
-		return fmt.Errorf("TORCH password is required")
-	}
+	// Username and password are optional - TORCH may not require authentication in all environments
 
 	if c.ExtractionTimeoutMinutes <= 0 {
 		return fmt.Errorf("extraction_timeout_minutes must be > 0, got %d", c.ExtractionTimeoutMinutes)

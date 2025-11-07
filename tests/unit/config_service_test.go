@@ -280,9 +280,6 @@ services:
     url: "http://csv:8080"
   parquet_conversion:
     url: "http://parquet:8080"
-  torch:
-    base_url: "http://torch:8080"
-    extraction_timeout_minutes: 60
 `
 	require.NoError(t, os.WriteFile(configFile, []byte(configContent), 0644))
 
@@ -296,8 +293,6 @@ services:
 	assert.Equal(t, 20, config.Services.DIMP.BundleSplitThresholdMB)
 	assert.Equal(t, "http://csv:8080", config.Services.CSVConversion.URL)
 	assert.Equal(t, "http://parquet:8080", config.Services.ParquetConversion.URL)
-	assert.Equal(t, "http://torch:8080", config.Services.TORCH.BaseURL)
-	assert.Equal(t, 60, config.Services.TORCH.ExtractionTimeoutMinutes)
 }
 
 // TestLoadConfig_ExplicitDIMPURL tests that explicit DIMP URL is preserved from config
