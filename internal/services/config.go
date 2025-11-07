@@ -10,8 +10,8 @@ import (
 	"github.com/trobanga/aether/internal/models"
 )
 
-// expandEnvVars expands environment variables in the format ${VAR} or $VAR
-func expandEnvVars(s string) string {
+// ExpandEnvVars expands environment variables in the format ${VAR} or $VAR
+func ExpandEnvVars(s string) string {
 	// Match ${VAR} pattern
 	re := regexp.MustCompile(`\$\{([A-Z_][A-Z0-9_]*)\}`)
 	expanded := re.ReplaceAllStringFunc(s, func(match string) string {
@@ -63,22 +63,22 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 	config := models.ProjectConfig{
 		Services: models.ServiceConfig{
 			TORCH: models.TORCHConfig{
-				BaseURL:                   expandEnvVars(viper.GetString("services.torch.base_url")),
-				Username:                  expandEnvVars(viper.GetString("services.torch.username")),
-				Password:                  expandEnvVars(viper.GetString("services.torch.password")),
+				BaseURL:                   ExpandEnvVars(viper.GetString("services.torch.base_url")),
+				Username:                  ExpandEnvVars(viper.GetString("services.torch.username")),
+				Password:                  ExpandEnvVars(viper.GetString("services.torch.password")),
 				ExtractionTimeoutMinutes:  viper.GetInt("services.torch.extraction_timeout_minutes"),
 				PollingIntervalSeconds:    viper.GetInt("services.torch.polling_interval_seconds"),
 				MaxPollingIntervalSeconds: viper.GetInt("services.torch.max_polling_interval_seconds"),
 			},
 			DIMP: models.DIMPConfig{
-				URL:                    expandEnvVars(viper.GetString("services.dimp.url")),
+				URL:                    ExpandEnvVars(viper.GetString("services.dimp.url")),
 				BundleSplitThresholdMB: viper.GetInt("services.dimp.bundle_split_threshold_mb"),
 			},
 			CSVConversion: models.CSVConversionConfig{
-				URL: expandEnvVars(viper.GetString("services.csv_conversion.url")),
+				URL: ExpandEnvVars(viper.GetString("services.csv_conversion.url")),
 			},
 			ParquetConversion: models.ParquetConversionConfig{
-				URL: expandEnvVars(viper.GetString("services.parquet_conversion.url")),
+				URL: ExpandEnvVars(viper.GetString("services.parquet_conversion.url")),
 			},
 		},
 		Retry: models.RetryConfig{
@@ -86,7 +86,7 @@ func LoadConfig(configFile string) (*models.ProjectConfig, error) {
 			InitialBackoffMs: viper.GetInt64("retry.initial_backoff_ms"),
 			MaxBackoffMs:     viper.GetInt64("retry.max_backoff_ms"),
 		},
-		JobsDir: expandEnvVars(viper.GetString("jobs_dir")),
+		JobsDir: ExpandEnvVars(viper.GetString("jobs_dir")),
 	}
 
 	// Get enabled steps
