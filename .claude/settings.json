@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔍 Running golangci-lint on project...'; golangci-lint run ./... 2>&1 || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
