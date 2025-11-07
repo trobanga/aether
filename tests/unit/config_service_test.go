@@ -61,8 +61,9 @@ func TestExpandEnvVars(t *testing.T) {
 				require.NoError(t, os.Setenv(k, v))
 			}
 
-			// Call the function  (Note: this would need to be exported to test)
-			// For now we test through LoadConfig indirectly
+			// Call the function and assert result
+			result := services.ExpandEnvVars(tt.input)
+			assert.Equal(t, tt.expected, result)
 
 			// Clean up environment
 			for k := range tt.envVars {
